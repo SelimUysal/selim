@@ -13,3 +13,30 @@
 @media print{@page{size:A4;margin:16mm 15mm}.site-header,.footer,.cv-toolbar{display:none!important}body,.cv-paper{background:#fff!important;color:#111!important}.cv-wrapper{max-width:none;margin:0}.cv-paper{padding:0;box-shadow:none;border-radius:0}.cv-paper h1{font-size:34pt}.cv-paper h2{font-size:13pt}.cv-entry{break-inside:avoid}.cv-paper .cv-inline{font-size:9pt}}
 @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}*,*:before,*:after{transition:none!important;animation:none!important}}
 [hidden]{display:none!important}
+
+/* 2026-10-28: Personal portrait and SU brand monogram — responsive, optimized assets */
+.identity-mark{
+ display:block;width:47px;height:47px;flex:0 0 47px;padding:0;
+ object-fit:cover;object-position:center;border-radius:12px;
+ background:#041d16;border:1px solid rgba(214,181,102,.27);
+ box-shadow:0 2px 12px rgba(0,0,0,.13);
+}
+.hero-visual{
+ background:#e8eef5;isolation:isolate;min-height:470px;
+}
+.portrait-photo{
+ position:absolute;inset:0;width:100%;height:100%;display:block;
+ object-fit:cover;object-position:50% 35%;
+}
+.hero-visual::after{
+ z-index:0;background:linear-gradient(180deg,rgba(8,21,39,.05) 0%,transparent 42%,rgba(6,16,31,.93) 100%);
+}
+.visual-top,.visual-content{z-index:2;}
+.visual-top span{background:rgba(8,24,44,.82);color:#fff;backdrop-filter:blur(6px)}
+.visual-content strong{color:#fff;text-shadow:0 2px 14px rgba(0,0,0,.6)}
+.visual-content p{color:#e1eaf6;text-shadow:0 1px 12px rgba(0,0,0,.55)}
+@media(max-width:630px){
+ .identity-mark{width:40px;height:40px;flex-basis:40px;border-radius:10px}
+ .hero-visual{min-height:380px}
+ .portrait-photo{object-position:center 35%}
+}
