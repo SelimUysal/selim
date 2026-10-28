@@ -478,6 +478,17 @@ export const DATA = {
       "issuer": "BTK Akademi",
       "year": "16 Jan 2024",
       "pdf": "./assets/certificates/oracle-sql-btk-akademi.pdf"
+    },
+    {
+      "id": "deneyap-instructor",
+      "title": {
+        "en": "Advanced Robotics Instructor Recognition",
+        "tr": "DENEYAP İleri Robotik Eğitmenliği Teşekkür Belgesi"
+      },
+      "issuer": "DENEYAP Technology Workshops",
+      "year": "2023",
+      "kind": "recognition",
+      "pdf": "./assets/certificates/deneyap-advanced-robotics-instructor.pdf"
     }
   ]
 };

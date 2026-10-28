@@ -58,3 +58,8 @@
 .cv-paper .cv-credential{margin-bottom:10px}
 @media(max-width:630px){.cv-paper .cv-featured-experience{padding:14px}.experience-video{font-size:11.5px}}
 @media print{.cv-paper .cv-featured-experience{background:#fff;border-left:2px solid #526f92;padding:10px 14px}.experience-video{color:#184d79;background:#fff;border:1px solid #aab9c9}.cv-paper .cv-evidence a{padding:3px 0;border:0}}
+
+/* Three featured credentials; use full card widths on smaller screens. */
+.certificate-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
+@media(max-width:900px){.certificate-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:630px){.certificate-grid{grid-template-columns:1fr}}
