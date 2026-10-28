@@ -406,7 +406,8 @@ export const DATA = {
       "description": {
         "en": "Taught software, robotics, electronics and introductory IoT to middle- and high-school students; mentored student projects, competition preparation and took part in project juries.",
         "tr": "Ortaokul ve lise öğrencilerine yazılım, robotik, elektronik ve temel IoT eğitimi verdi; öğrenci projeleri ve yarışma hazırlıklarında mentorluk yaptı, proje jürilerinde görev aldı."
-      }
+      },
+      "credential": "./assets/certificates/deneyap-advanced-robotics-instructor.pdf"
     }
   ],
   "honors": [
