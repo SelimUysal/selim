@@ -22,13 +22,17 @@ function projectCard(p,index,compact=false,featured=false){
 const isFeatured=featured&&p.id==='hayat';
 const content=`<div class="card-top"><span class="project-number">${String(index+1).padStart(2,'0')} / ${safe(p.year||'CODE')}</span><span class="project-kind">${safe(kinds(p))}</span></div><h3>${safe(loc(p.name))}</h3><p>${safe(loc(p.description))}</p><div class="tags">${tagList(p.stack,compact?3:4)}</div><div class="project-actions">${links(p)}</div>`;
 const coverMap={
+  teknofest:{src:'./assets/academic-teknofest-cover.svg',width:1600,height:900,en:'Concept illustration of aerial computer vision; not actual experimental output',tr:'Concept illustration of aerial computer vision; not actual experimental output'},
+  oracle:{src:'./assets/academic-oracle-cover.svg',width:1600,height:900,en:'Conceptual ER diagram of student course and enrollment database entities',tr:'Conceptual ER diagram of student course and enrollment database entities'},
+  patterns:{src:'./assets/academic-patterns-cover.svg',width:1600,height:900,en:'Conceptual UML style diagram of Strategy design pattern and implementations',tr:'Conceptual UML style diagram of Strategy design pattern and implementations'},
+
   hayat:{src:'./assets/hayat-rehberi-cover.webp',width:1000,height:563,en:'Hayat Rehberi application modules overview',tr:'Hayat Rehberi uygulamasının bölümlerini gösteren kapak'},
   video:{src:'./assets/video-speed-cover.webp',width:1920,height:1080,en:'Video Speed extension playback controls and browser interface',tr:'Video Speed eklentisinin tarayıcı ve video kontrol arayüzü'},
   telegram:{src:'./assets/telegram-news-cover.webp',width:1920,height:1080,en:'Telegram news automation workflow and sample channel',tr:'Telegram haber otomasyonu iş akışı ve örnek kanal'},
   quran:{src:'./assets/quran-memorization-cover.webp',width:1920,height:1080,en:'Quran memorization and Arabic word analysis application',tr:'Kur’an ezber ve Arapça kelime analizi uygulaması'}
 };
 const cover=coverMap[p.id];
-const mediaLink=p.links?.find(x=>['live','store','source'].includes(x.kind))?.url;
+const mediaLink=p.links?.find(x=>['live','store','source','report'].includes(x.kind))?.url;
 const media=cover?`<a href="${safe(mediaLink||'#')}" class="${isFeatured?'project-feature-media':'project-cover-media'}" target="_blank" rel="noopener noreferrer" aria-label="${safe(state.lang==='tr'?'Projeyi görüntüle: '+loc(p.name):'View project: '+loc(p.name))}"><img src="${safe(cover.src)}" width="${cover.width}" height="${cover.height}" loading="lazy" decoding="async" alt="${safe(state.lang==='tr'?cover.tr:cover.en)}"></a>`:'';
 return `<article class="project-card${isFeatured?' project-card-featured':''}" data-project="${safe(p.id)}">${media}${isFeatured?`<div class="project-feature-content">${content}</div>`:content}</article>`;
 }
