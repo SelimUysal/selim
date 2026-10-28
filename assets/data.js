@@ -3,13 +3,12 @@ export const DATA = {
   "profile": {
     "name": "Selim Uysal",
     "github": "https://github.com/SelimUysal",
-    "email": "uys.selim@gmail.com",
-    "linktree": "https://linktr.ee/selim_uysal",
     "education": {
       "school": "Atılım University",
       "degree": "B.Sc. in Software Engineering",
       "year": "2025"
-    }
+    },
+    "linkedin": "https://www.linkedin.com/in/seli%CC%87muysal/?locale=en-US"
   },
   "projects": [
     {
