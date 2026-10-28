@@ -4,7 +4,6 @@ export const DATA = {
     "name": "Selim Uysal",
     "github": "https://github.com/SelimUysal",
     "email": "uys.selim@gmail.com",
-    "academicCvPdf": "./assets/cv/selim-uysal-academic-cv.pdf",
     "linktree": "https://linktr.ee/selim_uysal",
     "education": {
       "school": "Atılım University",
@@ -90,7 +89,7 @@ export const DATA = {
       ],
       "theme": "teal",
       "symbol": "◇",
-      "year": "Undergraduate",
+      "year": "2024",
       "type": {
         "en": "SE461 · technical coursework",
         "tr": "SE461 · teknik ders çalışması"
@@ -452,12 +451,12 @@ export const DATA = {
         "tr": "Başarı belgesi"
       },
       "name": {
-        "en": "Fall Semester Honor Certificate",
-        "tr": "Güz Dönemi Onur Belgesi"
+        "en": "Spring 2022–2023 Honor Student Certificate",
+        "tr": "2022–2023 Bahar Yarıyılı Onur Öğrencisi Belgesi"
       },
       "detail": {
-        "en": "Atılım University",
-        "tr": "Atılım Üniversitesi"
+        "en": "Atılım University · 24 June 2023",
+        "tr": "Atılım Üniversitesi · 24 Haziran 2023"
       }
     }
   ],

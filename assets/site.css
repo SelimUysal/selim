@@ -75,3 +75,6 @@
 @media(max-width:630px){.volunteer-panel{flex-direction:column;align-items:stretch;padding:23px;gap:18px}.volunteer-link{width:100%}}
 
 .experience-date-link{color:var(--blue);text-decoration:underline;text-decoration-color:transparent;text-underline-offset:3px}.experience-date-link:hover{text-decoration-color:currentColor}
+
+/* Technical case study reading layout */
+.study-panel{border:1px solid var(--line);border-radius:18px;padding:clamp(22px,4vw,45px);background:var(--panel)}.study-panel h2{font-size:clamp(29px,4.5vw,49px);margin:9px 0 25px}.study-panel h3{font-size:16px;margin-bottom:9px}.study-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:28px}.study-grid p{line-height:1.85;overflow-wrap:anywhere}.study-note{margin:23px 0 17px;color:var(--muted);font-size:13px;line-height:1.75}.study-panel .project-actions{display:flex;flex-wrap:wrap;gap:16px}@media(max-width:630px){.study-grid{grid-template-columns:1fr;gap:22px}.study-panel{padding:22px}.study-panel h2{font-size:30px}}
