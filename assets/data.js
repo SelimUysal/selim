@@ -377,6 +377,11 @@ export const DATA = {
       "description": {
         "en": "Designed a web-based device and component management application with a React interface, Spring Boot REST APIs, PostgreSQL and PDF/HTML/JSON export functionality.",
         "tr": "React arayüzü, Spring Boot REST API’leri, PostgreSQL ve PDF/HTML/JSON dışa aktarma özellikleriyle web tabanlı cihaz ve bileşen yönetimi uygulaması geliştirdi."
+      },
+      "video": "https://www.youtube.com/watch?v=ZgHwIUqJTao",
+      "project": {
+        "en": "RIMS — ROPKON Inventory Management System",
+        "tr": "RIMS — ROPKON Envanter Yönetim Sistemi"
       }
     },
     {
