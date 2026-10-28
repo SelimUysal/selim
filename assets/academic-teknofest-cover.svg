@@ -1,0 +1,57 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="1600" height="900" viewBox="0 0 1600 900" role="img" aria-labelledby="cv-title cv-desc">
+<title id="cv-title">Aerial computer vision concept illustration</title><desc id="cv-desc">Conceptual aerial scene with bounding boxes for visual detection; not actual model results.</desc>
+<defs>
+<linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#0A172A"/><stop offset=".55" stop-color="#101F34"/><stop offset="1" stop-color="#07111D"/></linearGradient>
+<linearGradient id="panel" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#203751"/><stop offset="1" stop-color="#102339"/></linearGradient>
+<linearGradient id="tint" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#85A8FF" stop-opacity=".32"/><stop offset="1" stop-color="#4AD6D0" stop-opacity=".02"/></linearGradient>
+<pattern id="dots" width="32" height="32" patternUnits="userSpaceOnUse"><circle cx="1.5" cy="1.5" r="1.3" fill="#C3D5EF" opacity=".16"/></pattern>
+<filter id="glow"><feGaussianBlur stdDeviation="38"/></filter>
+<filter id="shadow"><feDropShadow dx="0" dy="15" stdDeviation="20" flood-color="#020710" flood-opacity=".4"/></filter>
+</defs>
+<rect width="1600" height="900" fill="url(#bg)"/>
+<rect width="1600" height="900" fill="url(#dots)"/>
+<circle cx="1310" cy="360" r="235" fill="#85A8FF" opacity=".085" filter="url(#glow)"/>
+<circle cx="160" cy="620" r="210" fill="#4AD6D0" opacity=".055" filter="url(#glow)"/>
+<path d="M 0 4 H 1600" stroke="#85A8FF" stroke-width="8" opacity=".9"/>
+<text x="82" y="101" fill="#B5C6DF" font-family="Inter,Arial,sans-serif" font-size="21" font-weight="700" letter-spacing="6">ACADEMIC   /   SELECTED WORK</text>
+<text x="1518" y="101" fill="#85A8FF" text-anchor="end" font-family="Inter,Arial,sans-serif" font-size="21" font-weight="700" letter-spacing="3">2024  /  UNDERGRADUATE</text>
+<path d="M 82 128 H 1518" stroke="#41607A" stroke-opacity=".55"/>
+<defs><clipPath id="sceneclip"><rect x="82" y="155" width="1436" height="550" rx="24"/></clipPath></defs>
+<rect x="82" y="155" width="1436" height="550" rx="24" fill="#183B47" stroke="#456783" stroke-width="2"/>
+<g clip-path="url(#sceneclip)">
+<rect x="82" y="155" width="1436" height="550" fill="#213B42"/>
+<path d="M 80 155 L 585 155 L 480 380 L 80 495 Z" fill="#2A4A40"/>
+<path d="M 576 155 L 1055 155 L 956 449 L 455 374 Z" fill="#284653"/>
+<path d="M 1066 155 L 1518 155 L 1518 511 L 959 447 Z" fill="#345148"/>
+<path d="M 80 520 L 459 393 L 971 464 L 808 708 L 80 708 Z" fill="#294A46"/>
+<path d="M 987 470 L 1518 524 L 1518 708 L 817 708 Z" fill="#1E4350"/>
+<g stroke="#88B393" stroke-opacity=".28" stroke-width="4">
+<path d="M 95 165 L 50 450"/><path d="M 137 165 L 87 450"/><path d="M 179 165 L 124 450"/><path d="M 221 165 L 161 450"/><path d="M 263 165 L 198 450"/><path d="M 305 165 L 235 450"/><path d="M 347 165 L 272 450"/><path d="M 389 165 L 309 450"/><path d="M 431 165 L 346 450"/><path d="M 473 165 L 383 450"/><path d="M 515 165 L 420 450"/><path d="M 557 165 L 457 450"/>
+<path d="M 1100 205 L 1540 235"/><path d="M 1100 205 L 1540 283"/><path d="M 1100 205 L 1540 331"/><path d="M 1100 205 L 1540 379"/><path d="M 1100 205 L 1540 427"/><path d="M 1100 205 L 1540 475"/><path d="M 1100 205 L 1540 523"/><path d="M 1100 205 L 1540 571"/><path d="M 1100 205 L 1540 619"/>
+<path d="M 118 552 L 758 442"/><path d="M 118 574 L 758 460"/><path d="M 118 596 L 758 478"/><path d="M 118 618 L 758 496"/><path d="M 118 640 L 758 514"/><path d="M 118 662 L 758 532"/><path d="M 118 684 L 758 550"/>
+</g>
+<path d="M 136 704 C 320 616, 441 580, 640 535 S 1085 325, 1495 152" stroke="#6C8088" stroke-width="96" fill="none"/>
+<path d="M 136 704 C 320 616, 441 580, 640 535 S 1085 325, 1495 152" stroke="#263B49" stroke-width="75" fill="none"/>
+<path d="M 136 704 C 320 616, 441 580, 640 535 S 1085 325, 1495 152" stroke="#A5B8C7" stroke-width="3" stroke-dasharray="21 26" opacity=".5" fill="none"/>
+<g transform="translate(425 564) rotate(-20)"><rect x="-49" y="-22" width="98" height="44" rx="9" fill="#D5DDE0"/><rect x="-31" y="-17" width="60" height="12" rx="4" fill="#7692A0"/><circle cx="-29" cy="24" r="6" fill="#07121C"/><circle cx="29" cy="24" r="6" fill="#07121C"/></g>
+<g transform="translate(1150 323) rotate(-27)"><rect x="-46" y="-21" width="92" height="42" rx="9" fill="#C8D5DB"/><path d="M-25-14 H25 V3 H-25Z" fill="#62828F"/></g>
+<g fill="#132E3B" stroke="#5E7C87" stroke-width="2"><rect x="711" y="239" width="125" height="85" rx="3" transform="rotate(8 711 239)"/><rect x="847" y="270" width="110" height="79" rx="3" transform="rotate(8 847 270)"/><rect x="111" y="277" width="134" height="65" rx="3" transform="rotate(-14 111 277)"/></g>
+<path d="M 1320 578 l 90 20 l -30 56 l -88 -20 Z" fill="#6B8C7A" opacity=".6"/>
+</g>
+<g fill="none" stroke="#87ABFF" stroke-width="4"><rect x="309" y="469" width="217" height="165" rx="7"/><rect x="1069" y="244" width="186" height="156" rx="7"/></g>
+<g fill="none" stroke="#5BE0CC" stroke-width="4"><rect x="675" y="194" width="328" height="215" rx="7"/></g>
+<g font-family="ui-monospace,SFMono-Regular,Consolas,monospace" font-weight="700" font-size="19">
+<rect x="309" y="432" width="217" height="37" rx="5" fill="#87ABFF"/><text x="323" y="457" fill="#061427">VEHICLE / SAMPLE</text>
+<rect x="1069" y="207" width="186" height="37" rx="5" fill="#87ABFF"/><text x="1083" y="232" fill="#061427">OBJECT / SAMPLE</text>
+<rect x="675" y="157" width="328" height="37" rx="5" fill="#5BE0CC"/><text x="688" y="182" fill="#05252D">LANDING ZONE / STUDY</text>
+</g>
+<g stroke="#D4ECF2" fill="none" stroke-width="2" opacity=".6"><circle cx="835" cy="500" r="53"/><path d="M835 427 V573 M762 500 H908"/><circle cx="835" cy="500" r="8"/></g>
+<rect x="108" y="656" rx="7" width="290" height="29" fill="#0A1726" fill-opacity=".8"/>
+<text x="122" y="675" font-family="Inter,Arial,sans-serif" font-size="15" letter-spacing="1.5" fill="#C9DBE9">ILLUSTRATION  •  NOT TEST OUTPUT</text>
+<rect x="0" y="744" width="1600" height="156" fill="#081424" opacity=".92"/>
+<path d="M 82 744 H 1518" stroke="#35526D" stroke-opacity=".62"/>
+<text x="88" y="819" font-family="Inter,Arial,sans-serif" font-size="54" font-weight="800" letter-spacing="1.5" fill="#F2F7FF">AERIAL VISION</text>
+<text x="91" y="862" font-family="Inter,Arial,sans-serif" font-size="23" font-weight="500" letter-spacing=".7" fill="#AFC1D7">Object detection   /   YOLOv8–YOLOv9   /   SAHI</text>
+<rect x="1307" y="790" width="211" height="43" rx="21.5" stroke="#85A8FF" stroke-opacity=".55" fill="#85A8FF" fill-opacity=".08"/>
+<text x="1412" y="817.5" text-anchor="middle" font-family="Inter,Arial,sans-serif" font-size="15" font-weight="700" fill="#85A8FF" letter-spacing="1.7">CONCEPT ARTWORK</text>
+</svg>
