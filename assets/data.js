@@ -384,7 +384,15 @@ export const DATA = {
       "project": {
         "en": "RIMS — ROPKON Inventory Management System",
         "tr": "RIMS — ROPKON Envanter Yönetim Sistemi"
-      }
+      },
+      "image": "./assets/experience-ayesas.webp",
+      "imageAlt": {
+        "en": "Photo at the AYESAŞ facility beside the company sign",
+        "tr": "AYESAŞ tesisinde şirket tabelasının yanında çekilmiş fotoğraf"
+      },
+      "imageWidth": 1100,
+      "imageHeight": 1620,
+      "imageClass": "ayesas"
     },
     {
       "name": "LENTATEK",
@@ -396,7 +404,15 @@ export const DATA = {
       "description": {
         "en": "Developed Qt-based interfaces, worked with serial communications and configured Ubuntu environments for embedded systems workflows.",
         "tr": "Qt tabanlı arayüzler geliştirdi; seri haberleşme ve Ubuntu ortamının gömülü sistemler için yapılandırılması üzerinde çalıştı."
-      }
+      },
+      "image": "./assets/experience-lentatek.webp",
+      "imageAlt": {
+        "en": "Photo at a LENTATEK defense technology exhibition with a UAV",
+        "tr": "LENTATEK savunma teknolojileri fuarında insansız hava aracı yanında çekilmiş fotoğraf"
+      },
+      "imageWidth": 1100,
+      "imageHeight": 1703,
+      "imageClass": "lentatek"
     },
     {
       "name": "DENEYAP Technology Workshops",
@@ -409,7 +425,15 @@ export const DATA = {
         "en": "Taught software, robotics, electronics and introductory IoT to middle- and high-school students; mentored student projects, competition preparation and took part in project juries.",
         "tr": "Ortaokul ve lise öğrencilerine yazılım, robotik, elektronik ve temel IoT eğitimi verdi; öğrenci projeleri ve yarışma hazırlıklarında mentorluk yaptı, proje jürilerinde görev aldı."
       },
-      "credential": "./assets/certificates/deneyap-advanced-robotics-instructor.pdf"
+      "credential": "./assets/certificates/deneyap-advanced-robotics-instructor.pdf",
+      "image": "./assets/experience-deneyap.webp",
+      "imageAlt": {
+        "en": "Group photo from a DENEYAP technology workshop with students",
+        "tr": "DENEYAP teknoloji atölyesinde öğrencilerle çekilmiş grup fotoğrafı"
+      },
+      "imageWidth": 1440,
+      "imageHeight": 688,
+      "imageClass": "deneyap"
     }
   ],
   "honors": [
