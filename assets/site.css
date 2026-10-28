@@ -63,3 +63,13 @@
 .certificate-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
 @media(max-width:900px){.certificate-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:630px){.certificate-grid{grid-template-columns:1fr}}
+
+/* Community work is intentionally understated, distinct from professional work. */
+.volunteer-panel{display:flex;align-items:center;justify-content:space-between;gap:26px;padding:32px 36px;border:1px solid var(--line);border-radius:18px;background:var(--panel)}
+.volunteer-copy{max-width:740px;min-width:0}
+.volunteer-panel h2{font-size:clamp(26px,3vw,36px);margin:9px 0 12px}
+.volunteer-lead{max-width:660px;font-size:15px;line-height:1.75}
+.volunteer-note{display:inline-block;color:var(--faint);font-size:12px;margin-top:14px}
+.volunteer-link{flex:none;white-space:normal;text-align:center}
+@media(max-width:900px){.volunteer-panel{padding:27px}}
+@media(max-width:630px){.volunteer-panel{flex-direction:column;align-items:stretch;padding:23px;gap:18px}.volunteer-link{width:100%}}

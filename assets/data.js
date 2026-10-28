@@ -152,6 +152,10 @@ export const DATA = {
         {
           "kind": "source",
           "url": "https://github.com/SelimUysal/hayat-rehberi"
+        },
+        {
+          "kind": "video",
+          "url": "https://youtu.be/V_ogWBPFksc"
         }
       ],
       "category": "software",
@@ -398,7 +402,7 @@ export const DATA = {
     },
     {
       "name": "DENEYAP Technology Workshops",
-      "date": "~18 months",
+      "date": "Sep 2022 – Jan 2024",
       "kind": {
         "en": "STEM Instructor",
         "tr": "STEM Eğitmeni"
