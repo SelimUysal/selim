@@ -179,3 +179,13 @@
 .academic-grid .project-card{overflow:hidden}
 .academic-grid .project-cover-media{width:calc(100% + 46px);margin:-23px -23px 20px;aspect-ratio:16/9}
 .academic-grid .project-cover-media img{object-fit:contain}
+
+/* Unified card gradient: exactly the same 115deg panel -> panel-2 transition
+   as the original Contact section, in light AND dark themes. */
+.contact-panel,
+.volunteer-panel,
+.cv-grid .cv-card,
+.certificate-grid .certificate,
+.bottom-grid .info-card {
+  background: linear-gradient(115deg, var(--panel), var(--panel-2));
+}
