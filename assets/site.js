@@ -1,160 +1,46 @@
 import { DATA } from './data.js';
 
-const $ = (selector, context = document) => context.querySelector(selector);
-const $$ = (selector, context = document) => [...context.querySelectorAll(selector)];
-const escapeHtml = (value) => String(value ?? '').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
-const getPreference = (name, fallback) => { try { return localStorage.getItem(name) || fallback; } catch { return fallback; } };
-const setPreference = (name, value) => { try { localStorage.setItem(name, value); } catch {} };
-const state = {lang:getPreference('selim-language','en'),theme:getPreference('selim-theme','dark'),filter:'all'};
-if (!['tr','en'].includes(state.lang)) state.lang='en';
-if (!['dark','light'].includes(state.theme)) state.theme='dark';
-
-const i18n = {
-  en: {
-    work:'Work',allProjects:'All Projects',experience:'Experience',research:'Research',about:'About',contact:'Contact',
-    heroEyebrow:'SOFTWARE ENGINEER · AI & AUTONOMOUS SYSTEMS',heroTitle:'Building practical solutions with <span>AI and software engineering.</span>',
-    heroLead:'I develop real-world software applications and explore intelligent systems that connect machine learning, autonomous technologies and modern software design.',
-    viewWork:'View My Work →',downloadCv:'Download CV ↧',featured:'Featured Projects',featuredLead:'A curated selection of software and research work.',
-    exploreAll:'Explore all projects ↗',smartSearch:'Smart Project Search',results:'Projects',searchHint:'Search by technology, project, description, abbreviation or typo.',viewAll:'Browse all projects ↗',
-    researchTitle:'Research Statement',researchAreas:'Key Research Areas',academicNote:'Academic reports are undergraduate project work, not peer-reviewed publications.',
-    experienceLead:'Industry practice, embedded systems and teaching.',aboutLead:'A software engineer with a growing interest in research.',education:'EDUCATION',recognition:'RECOGNITION',certificates:'Certificates',
-    resume:'Two résumés. One identity.',academicCv:'Academic CV',industryCv:'Software Engineering CV',academicCvLead:'Research direction, education and undergraduate studies.',
-    industryCvLead:'Applications, engineering practice and technical experience.',openCv:'Open CV ↗',contactTitle:"Let's build something useful.",contactLead:'Open to conversations on software engineering and graduate research.',emailMe:'Email me ↗',
-    mobilePreview:'Mobile Preview',socialPreview:'Social Link Preview',projectsTitle:'Projects & experiments.',projectsLead:'Search verified software projects, undergraduate research reports and code exercises. Each project links to its source, live app, store listing or report where available.',
-    all:'All',software:'Software',researchFilter:'Academic',archive:'Learning repositories',back:'← Back to portfolio',print:'Print / Save as PDF'
-  },
-  tr: {
-    work:'Çalışmalar',allProjects:'Tüm Projeler',experience:'Deneyim',research:'Araştırma',about:'Hakkımda',contact:'İletişim',
-    heroEyebrow:'YAZILIM MÜHENDİSİ · YAPAY ZEKÂ VE OTONOM SİSTEMLER',heroTitle:'<span>Yapay zekâ ve yazılım mühendisliğiyle</span> gerçek çözümler geliştiriyorum.',
-    heroLead:'Gerçek yaşamda kullanılan yazılımlar geliştiriyor; makine öğrenmesi, otonom teknolojiler ve modern yazılım tasarımını birleştiren akıllı sistemleri araştırıyorum.',
-    viewWork:'Çalışmalarımı İncele →',downloadCv:'CV İndir ↧',featured:'Öne Çıkan Projeler',featuredLead:'Yazılım ve araştırma çalışmalarından seçtiklerim.',
-    exploreAll:'Tüm projeleri keşfet ↗',smartSearch:'Akıllı Proje Araması',results:'Projeler',searchHint:'Teknoloji, proje, açıklama, kısaltma veya yazım hatasıyla arayın.',viewAll:'Bütün projeleri incele ↗',
-    researchTitle:'Araştırma Beyanım',researchAreas:'Temel Araştırma Alanları',academicNote:'Akademik raporlar hakemli yayın değil, lisans düzeyindeki proje çalışmalarıdır.',
-    experienceLead:'Sektör, gömülü sistemler ve eğitmenlik deneyimlerim.',aboutLead:'Araştırmaya ilgi duyan bir yazılım mühendisi.',education:'EĞİTİM',recognition:'BAŞARI',certificates:'Sertifikalar',
-    resume:'Tek kimlik. İki farklı CV.',academicCv:'Akademik CV',industryCv:'Yazılım Mühendisliği CV',academicCvLead:'Araştırma hedefleri, eğitim ve lisans çalışmaları.',
-    industryCvLead:'Uygulamalar, mühendislik ve teknik deneyim.',openCv:'CV’yi aç ↗',contactTitle:'Birlikte değerli bir şey üretelim.',contactLead:'Yazılım mühendisliği ve lisansüstü araştırmalar üzerine iletişime açığım.',emailMe:'E-posta gönder ↗',
-    mobilePreview:'Mobil Görünüm',socialPreview:'Sosyal Medya Link Önizlemesi',projectsTitle:'Projelerim ve denemelerim.',projectsLead:'Yazılım projelerimi, lisans raporlarımı ve kod çalışmalarımı arayın. Varsa kaynak kodu, canlı uygulama, mağaza veya raporu doğrudan açabilirsiniz.',
-    all:'Tümü',software:'Yazılım',researchFilter:'Akademik',archive:'Öğrenme depoları',back:'← Portfolyoya dön',print:'Yazdır / PDF Kaydet'
-  }
-};
-const localize = (obj) => typeof obj === 'string' ? obj : (obj?.[state.lang] ?? obj?.en ?? '');
-const linkLabels = {en:{live:'Live App',source:'GitHub',store:'Chrome Store',video:'Video',report:'Report (PDF)'},tr:{live:'Canlı Uygulama',source:'GitHub',store:'Chrome Mağazası',video:'Video',report:'Rapor (PDF)'}};
-function actionButtons(project){return (project.links || []).map(item => `<a href="${escapeHtml(item.url)}" class="${['live','store','report'].includes(item.kind)?'action-primary':''}" target="_blank" rel="noopener noreferrer">${escapeHtml(linkLabels[state.lang][item.kind] || 'Open')} ↗</a>`).join('');}
-function tagList(items,max=3){return (items||[]).slice(0,max).map(value=>`<span class="tag">${escapeHtml(value)}</span>`).join('');}
-function projectSummary(item){
- if(state.lang==='en'){
-  if(item.id==='hayat')return 'Prayer schedules, Quran reading, memorization and learning tools in one responsive app.';
-  if(item.id==='teknofest')return 'Aerial object detection with YOLO and SAHI. 11th of 198 teams in preliminary design evaluation.';
-  if(item.id==='video')return 'Control HTML5 video speed, shortcuts and saved preferences.';
-  if(item.id==='telegram')return 'News gathering and Telegram Bot API automation prototype.';
- } else {
-  if(item.id==='hayat')return 'Namaz vakitleri, Kur’an okuma, ezber ve öğrenme araçlarını buluşturan mobil uyumlu uygulama.';
-  if(item.id==='teknofest')return 'YOLO ve SAHI ile havadan nesne tespiti; ön tasarım değerlendirmesinde 198 takım arasında 11’incilik.';
-  if(item.id==='video')return 'HTML5 video hızını, kısayollarını ve kayıtlı tercihleri yöneten eklenti.';
-  if(item.id==='telegram')return 'Haber toplama ve Telegram Bot API otomasyon prototipi.';
- }
- return localize(item.description);
-}
-function homeCard(p){return `<article class="project-card" data-project="${escapeHtml(p.id)}"><div class="project-head"><span class="project-symbol symbol-${escapeHtml(p.id)}">${escapeHtml(p.icon)}</span><span class="small-text">↗</span></div><h3>${escapeHtml(localize(p.name))}</h3><div class="tags">${tagList(p.stack)}</div><p>${escapeHtml(projectSummary(p))}</p><div class="links">${actionButtons(p)}</div></article>`;}
-const projects = [...DATA.projects];
-const archived = DATA.archive.map(p=>({...p,category:'archive',stack:[p.technology],links:[{kind:'source',url:p.url}],icon:'⌁'}));
-const catalog = [...projects,...archived];
-const normalize = value => String(value??'').normalize('NFKD').replace(/[\u0300-\u036f]/g,'').replace(/ı/g,'i').toLowerCase().replace(/[^a-z0-9+#.]+/g,' ').trim();
-const tokenize = value => normalize(value).split(/\s+/).filter(Boolean);
-const aliases = {
- pyt:['python'],py:['python'],pyth:['python'],pyhton:['python'],pytjon:['python'],python3:['python'],
- yapay:['ai','artificial','machine','yolo'],zeka:['ai','intelligence','machine','yolo'],ai:['artificial','yapay','zeka','machine','yolo'],
- drone:['aerial','transportation','yolo'],dron:['aerial','transportation','yolo'],iha:['aerial','transportation','yolo'],
- db:['database','oracle','sql'],veritabani:['oracle','sql','database'],veri:['database','sql'],
- ml:['learning','machine','yolo'],llm:['gemini','language','models'],
- otomasyon:['automation','telegram','puppeteer'],automation:['otomasyon','telegram','puppeteer'],
- extension:['chrome','browser','speed'],eklenti:['chrome','browser','speed'],
- web:['react','vite','typescript','html'],js:['javascript'],ts:['typescript'],reactjs:['react'],
- cv:['vision','yolo','computer'],goruntu:['vision','detection','yolo'],quran:['quran','kur','arabic'],kuran:['quran','arabic']
-};
-function distance(a,b){
- if(Math.abs(a.length-b.length)>2)return 3;
- let old=Array.from({length:b.length+1},(_,i)=>i);
- for(let i=1;i<=a.length;i++){
-  let next=[i];for(let j=1;j<=b.length;j++)next.push(Math.min(next[j-1]+1,old[j]+1,old[j-1]+(a[i-1]===b[j-1]?0:1)));
-  old=next;
- }
- return old[b.length];
-}
-function tokenScore(query, words){
- const terms=[query,...(aliases[query]||[])];let best=0;
- for(let k=0;k<terms.length;k++)for(const word of words){
-  const term=terms[k],alias=k!==0;
-  if(term===word)best=Math.max(best,alias?.9:1);
-  else if(term.length>=3&&word.startsWith(term))best=Math.max(best,alias?.65:.8);
-  else if(term.length>=4&&word.includes(term))best=Math.max(best,alias?.42:.52);
-  else if(term.length>=4&&!alias&&word.length>=4&&distance(term,word)<=(term.length>=8?2:1))best=Math.max(best,.39);
- }
- return best;
-}
-function matchScore(item,words){
- const fields = [[localize(item.name),13],[Object.values(item.name).join(' '),9],[(item.stack||[]).join(' '),11],[localize(item.description),3],[Object.values(item.description).join(' '),2],[item.category,2]];
- let total=0;
- for(const word of words){
-  const match=Math.max(...fields.map(([value,weight])=>weight*tokenScore(word,tokenize(value))));
-  if(!match)return null;
-  total+=match;
- }
- return total;
-}
-function search(query,filter='all'){
- const words=tokenize(query).slice(0,8);
- return catalog.map((item,index)=>({item,index,score:words.length?matchScore(item,words):0}))
-  .filter(x=>x.score!==null&&(filter==='all'||(filter==='software'?(x.item.category==='software'||x.item.category==='archive'):x.item.category==='research')))
-  .sort((a,b)=>b.score-a.score||a.index-b.index).map(x=>x.item);
-}
-function quickResults(){
- const field=$('#quick-search');if(!field)return;
- const query=field.value;const matches=search(query);
- $('#quick-count').textContent=`${matches.length} ${state.lang==='tr'?'sonuç':'results'}`;
- const shown=matches.slice(0,5);
- $('#quick-list').innerHTML=shown.length?shown.map(p=>{
-  const tags=tagList(p.stack,3);
-  const url=p.links?.[0]?.url||'#';
-  return `<a class="result-item" href="${escapeHtml(url)}" target="_blank" rel="noopener noreferrer"><span class="result-icon">${escapeHtml(p.icon)}</span><span><h3>${escapeHtml(localize(p.name))}</h3><span class="tags">${tags}</span></span><span class="arrow">›</span></a>`;
- }).join(''):`<div class="empty-results">${state.lang==='tr'?'Sonuç bulunamadı. Başka bir kelime deneyin.':'No projects found. Try another keyword.'}</div>`;
-}
-function directoryResults(){
- const target=$('#directory-results');if(!target)return;
- const input=$('#directory-search');const results=search(input?.value||'',state.filter);
- const main=results.filter(p=>p.category!=='archive');
- const archiveMatches=results.filter(p=>p.category==='archive');
- target.innerHTML=main.length?main.map(p=>`<article class="directory-card"><span class="project-symbol symbol-${escapeHtml(p.id)}">${escapeHtml(p.icon)}</span><h2>${escapeHtml(localize(p.name))}</h2><p>${escapeHtml(localize(p.description))}</p><div class="tags">${tagList(p.stack,5)}</div><div class="links">${actionButtons(p)}</div></article>`).join(''):`<div class="empty-results">${state.lang==='tr'?'Eşleşen proje bulunamadı.':'No matching projects found.'}</div>`;
- const archiveSection=$('.archive-heading');const ag=$('#archive-grid');
- if(ag){ag.innerHTML=archiveMatches.map(p=>`<article class="archive-item"><h3>${escapeHtml(localize(p.name))}</h3><p>${escapeHtml(localize(p.description))}</p>${actionButtons(p)}</article>`).join('');if(archiveSection)archiveSection.hidden=archiveMatches.length===0;ag.hidden=archiveMatches.length===0;}
- $('#directory-count').textContent=`${results.length} ${state.lang==='tr'?'sonuç':'results'} · ${state.lang==='tr'?'Projeler gerçek kaynak bağlantılarıyla sunuluyor.':'Links point to real repositories, demos and reports.'}`;
-}
-function renderHome(){
- const grid=$('#home-projects');if(!grid)return;
- grid.innerHTML=['hayat','teknofest','video','telegram'].map(id=>projects.find(p=>p.id===id)).filter(Boolean).map(homeCard).join('');
- $('#statement-copy').textContent=localize(DATA.researchStatement);
- const timeline=$('#timeline');if(timeline)timeline.innerHTML=DATA.experiences.map(e=>`<article><span class="year">${escapeHtml(e.date)}</span><h3>${escapeHtml(e.name)}</h3><strong>${escapeHtml(localize(e.kind))}</strong><p>${escapeHtml(localize(e.description))}</p></article>`).join('');
- const cert=$('#cert-list');if(cert)cert.innerHTML=DATA.certificates.map(c=>`<article class="credential-card"><span class="mini-label">${escapeHtml(c.issuer)}</span><h3>${escapeHtml(localize(c.title))}</h3><p>${escapeHtml(c.year)}</p><a href="${escapeHtml(c.pdf)}" target="_blank" rel="noopener noreferrer">${state.lang==='tr'?'Sertifikayı görüntüle ↗':'View certificate ↗'}</a></article>`).join('');
- quickResults();
-}
-function applyLanguage(){
- document.documentElement.lang=state.lang;
- $$('[data-i18n]').forEach(el=>{const translation=i18n[state.lang][el.dataset.i18n];if(translation)el.textContent=translation;});
- $$('[data-i18n-html]').forEach(el=>{const translation=i18n[state.lang][el.dataset.i18nHtml];if(translation)el.innerHTML=translation;});
- document.title=state.lang==='tr'?'Selim Uysal | Yazılım Mühendisi':'Selim Uysal | Software Engineer';
- renderHome();directoryResults();
-}
-function applyTheme(){document.documentElement.dataset.theme=state.theme;}
-function init(){
- applyTheme();applyLanguage();
- $$('[data-language]').forEach(b=>b.addEventListener('click',()=>{state.lang=state.lang==='tr'?'en':'tr';setPreference('selim-language',state.lang);applyLanguage();}));
- $$('[data-theme]').forEach(b=>b.addEventListener('click',()=>{state.theme=state.theme==='dark'?'light':'dark';setPreference('selim-theme',state.theme);applyTheme();}));
- $$('[data-menu]').forEach(button=>button.addEventListener('click',()=>{const nav=$('#mobile-nav');nav.classList.toggle('open');button.setAttribute('aria-expanded',nav.classList.contains('open')?'true':'false');}));
- $$('#mobile-nav a').forEach(a=>a.addEventListener('click',()=>{$('#mobile-nav')?.classList.remove('open');$('[data-menu]')?.setAttribute('aria-expanded','false');}));
- $('#quick-search')?.addEventListener('input',quickResults);
- $$('[data-query]').forEach(b=>b.addEventListener('click',()=>{const input=$('#quick-search');input.value=b.dataset.query;quickResults();input.focus();}));
- $('#directory-search')?.addEventListener('input',directoryResults);
- $$('[data-filter]').forEach(b=>b.addEventListener('click',()=>{state.filter=b.dataset.filter;$$('[data-filter]').forEach(x=>x.setAttribute('aria-pressed',String(x===b)));directoryResults();}));
- document.addEventListener('keydown',e=>{if(e.key==='/'&&!['INPUT','TEXTAREA'].includes(document.activeElement?.tagName)){e.preventDefault();const input=$('#quick-search')||$('#directory-search');input?.focus();}});
-}
-init();
+const root=document.querySelector('#app');
+const page=document.body.dataset.page;
+const safe=s=>String(s??'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+const pref=(key,fallback)=>{try{return localStorage.getItem(key)||fallback}catch{return fallback}};
+const save=(key,value)=>{try{localStorage.setItem(key,value)}catch{}};
+const state={lang:pref('selim-language','en')==='tr'?'tr':'en',theme:pref('selim-theme','dark')==='light'?'light':'dark',filter:'all',query:'',menu:false};
+const en={home:'Home',work:'Work',all:'All projects',research:'Research',experience:'Experience',about:'About',contact:'Contact',academic:'Academic CV',industry:'Industry résumé',language:'Language',theme:'Change color theme',menu:'Toggle navigation', heroKicker:'SOFTWARE ENGINEER · APPLIED AI',hero1:'Engineering useful software.',hero2:'Exploring intelligent systems.',heroLead:'I build practical web applications, browser tools and automation systems, while exploring computer vision and AI-driven software engineering.',heroVisual:'Where engineering meets curiosity.',heroNote:'Applications, original code and technical reports — all in one place.',viewWork:'Explore my work',viewProjects:'Browse all projects',degree:'B.Sc. Software Engineering',featured:'Selected software projects',featuredLead:'Working applications, a published browser extension and a practical automation prototype. Open the product or inspect its source.',viewAll:'View all projects',software:'Software',academicWork:'Academic work',academicLead:'Three undergraduate course and competition projects, with their original reports available for review.',note:'These are undergraduate project reports, not peer-reviewed publications.',researchTitle:'Research direction',researchAreas:'Focus areas',researchIntro:'A specific direction shaped by earlier project work.',experienceTitle:'Experience & teaching',experienceLead:'Industry exposure and mentoring, presented without duplicate timelines.',aboutTitle:'Education & recognition',aboutLead:'A software engineering foundation with documented milestones.',edu:'Education',recognition:'Recognition',certTitle:'Selected certifications',certLead:'Two relevant credentials with supporting documents.',viewCertificate:'View certificate',verify:'Verify credential',cvTitle:'Two CVs, one professional identity',cvLead:'Targeted versions for graduate admissions and software engineering roles.',academicCvLead:'Education, undergraduate projects, research direction and teaching.',industryCvLead:'Applied software projects, technologies, internships and delivery.',openCv:'View CV',contactTitle:'Have an idea worth discussing?',contactLead:'Open to engineering, graduate research and thoughtful collaborations.',email:'Email me',github:'GitHub',linktree:'Linktree',projectsTitle:'Projects & technical work',projectsLead:'Search by name, technology or topic. Open a live application, source repository, store page or original course report.',searchPlaceholder:'Try pyt, React, vision, Oracle…',allFilter:'All',softwareFilter:'Software',academicFilter:'Academic',learningFilter:'Learning',results:'projects found',noResults:'No matching projects. Try another search.',hint:'Quick searches',learning:'Learning repository',live:'Live application',source:'Source code',store:'Chrome Web Store',report:'Read report',video:'Video walkthrough',cvBack:'Back to portfolio',print:'Print / Save PDF',cvAcademicTitle:'Academic curriculum vitae',cvIndustryTitle:'Software engineering résumé',cvAcademicSummary:'Software engineering graduate interested in evidence-based computer vision, reliable autonomous systems and graduate-level research.',cvIndustrySummary:'Software engineering graduate with web, browser tooling, automation and embedded-systems internship experience.',cvProjects:'Selected projects',cvExperience:'Professional experience',cvResearch:'Research direction',cvEducation:'Education & recognition',cvSkills:'Technical skills',cvLinks:'Relevant links',cvCertificates:'Certificates'};
+const tr={home:'Ana sayfa',work:'Çalışmalar',all:'Tüm projeler',research:'Araştırma',experience:'Deneyim',about:'Hakkımda',contact:'İletişim',academic:'Akademik CV',industry:'Sektörel CV',language:'Dil',theme:'Görünümü değiştir',menu:'Menüyü aç/kapat',heroKicker:'YAZILIM MÜHENDİSİ · UYGULAMALI YAPAY ZEKÂ',hero1:'Faydalı yazılımlar geliştiriyorum.',hero2:'Akıllı sistemleri araştırıyorum.',heroLead:'Web uygulamaları, tarayıcı araçları ve otomasyon sistemleri geliştirirken bilgisayarlı görü ve yapay zekâ destekli yazılım mühendisliği üzerine çalışıyorum.',heroVisual:'Mühendisliğin merakla buluştuğu yerde.',heroNote:'Uygulamalar, kaynak kodlar ve teknik raporlar tek yerde.',viewWork:'Çalışmalarımı incele',viewProjects:'Tüm projeleri gör',degree:'Yazılım Mühendisliği Lisans',featured:'Seçilmiş yazılım projeleri',featuredLead:'Kullanılabilir uygulamalar, yayımlanmış tarayıcı eklentisi ve otomasyon prototipi. Ürünleri veya kaynak kodlarını inceleyin.',viewAll:'Tüm projeler',software:'Yazılım',academicWork:'Akademik çalışmalar',academicLead:'Özgün raporları incelemeye açık üç lisans dersi ve yarışma çalışması.',note:'Bunlar hakemli yayınlar değil, lisans düzeyindeki proje raporlarıdır.',researchTitle:'Araştırma hedefim',researchAreas:'Odak alanları',researchIntro:'Önceki proje deneyimlerinden gelişen somut bir araştırma yönelimi.',experienceTitle:'Deneyim ve eğitmenlik',experienceLead:'Tekrara düşmeden aktarılan staj ve eğitim deneyimlerim.',aboutTitle:'Eğitim ve başarılar',aboutLead:'Belgelendirilmiş kazanımlarla desteklenen yazılım mühendisliği altyapısı.',edu:'Eğitim',recognition:'Başarılar',certTitle:'Seçilmiş sertifikalar',certLead:'Belgelendirilebilir iki ilgili eğitim.',viewCertificate:'Sertifikayı aç',verify:'Doğrula',cvTitle:'Tek kimlik, iki ayrı CV',cvLead:'Lisansüstü başvurular ve yazılım mühendisliği pozisyonları için hazırlanmış özgeçmişler.',academicCvLead:'Eğitim, lisans projeleri, araştırma hedefleri ve eğitmenlik.',industryCvLead:'Uygulamalar, teknolojiler, stajlar ve pratik mühendislik.',openCv:'CV’yi incele',contactTitle:'Bir fikri birlikte geliştirelim mi?',contactLead:'Yazılım mühendisliği, lisansüstü araştırma ve anlamlı iş birlikleri üzerine iletişime açığım.',email:'E-posta gönder',github:'GitHub',linktree:'Linktree',projectsTitle:'Projeler ve teknik çalışmalar',projectsLead:'Proje adına, teknolojiye veya konuya göre arama yapın. Canlı uygulamaları, kaynak kodu, mağaza sayfasını ya da ders raporunu açın.',searchPlaceholder:'pyt, React, görüntü, Oracle…',allFilter:'Tümü',softwareFilter:'Yazılım',academicFilter:'Akademik',learningFilter:'Öğrenme',results:'proje bulundu',noResults:'Eşleşen proje yok. Farklı bir kelime deneyin.',hint:'Hızlı arama',learning:'Öğrenme deposu',live:'Canlı uygulama',source:'Kaynak kod',store:'Chrome Web Store',report:'Raporu oku',video:'Video anlatım',cvBack:'Portfolyoya dön',print:'Yazdır / PDF kaydet',cvAcademicTitle:'Akademik özgeçmiş',cvIndustryTitle:'Yazılım mühendisliği özgeçmişi',cvAcademicSummary:'Kanıta dayalı bilgisayarlı görü, güvenilir otonom sistemler ve lisansüstü araştırmalarla ilgilenen yazılım mühendisliği mezunu.',cvIndustrySummary:'Web uygulamaları, tarayıcı araçları, otomasyon ve gömülü sistem staj deneyimi bulunan yazılım mühendisliği mezunu.',cvProjects:'Seçilmiş projeler',cvExperience:'Mesleki deneyimler',cvResearch:'Araştırma yönelimi',cvEducation:'Eğitim ve başarılar',cvSkills:'Teknik yetkinlikler',cvLinks:'Bağlantılar',cvCertificates:'Sertifikalar'};
+const t=k=>(state.lang==='tr'?tr:en)[k]||k;
+const loc=x=>typeof x==='string'?x:(x?.[state.lang]??x?.en??'');
+const href=(url,text,cls='')=>`<a class="${safe(cls)}" href="${safe(url)}"${/^(https?:|mailto:)/.test(url)||url.endsWith('.pdf')?' target="_blank" rel="noopener noreferrer"':''}>${safe(text)}</a>`;
+const links=p=>(p.links||[]).map(l=>href(l.url,`${t(l.kind)} ↗`)).join('');
+const tagList=(stack,max=4)=>(stack||[]).slice(0,max).map(v=>`<span class="tag">${safe(v)}</span>`).join('');
+const audienceLink=(section)=>page==='home'?`#${section}`:`./index.html#${section}`;
+function header(){const nav=[['work','work'],['research','research'],['experience','experience'],['about','about']].map(([label,id])=>`<a href="${audienceLink(id)}">${t(label)}</a>`).join('');const projects=`<a href="./projects.html" ${page==='projects'?'aria-current="page"':''}>${t('all')}</a>`;return `<a href="#main" class="skip">${state.lang==='tr'?'İçeriğe geç':'Skip to content'}</a><header class="site-header"><div class="container header-inner"><a href="./index.html" class="identity" aria-label="Selim Uysal — ${t('home')}"><span class="identity-mark">SU</span><span class="identity-name"><strong>Selim Uysal</strong><small>Software Engineer</small></span></a><nav class="nav" aria-label="Primary navigation">${nav}${projects}</nav><div class="header-actions"><button class="lang-btn" data-lang aria-label="${t('language')}: ${state.lang==='tr'?'English':'Türkçe'}">${state.lang==='tr'?'TR':'EN'}</button><button class="icon-btn" data-toggle-theme aria-label="${t('theme')}" title="${t('theme')}">${state.theme==='dark'?'☀':'☾'}</button><a class="small-cta" href="mailto:${safe(DATA.profile.email)}">${t('contact')}</a><button class="menu-btn" data-menu aria-expanded="${state.menu}" aria-controls="mobile-nav" aria-label="${t('menu')}">${state.menu?'✕':'☰'}</button></div></div><nav class="container mobile-nav ${state.menu?'open':''}" id="mobile-nav" aria-label="Mobile navigation">${nav}${projects}<a href="./cv.html">${t('academic')}</a><a href="./industry-cv.html">${t('industry')}</a></nav></header>`}
+function footer(){return `<footer class="container footer"><span>© ${new Date().getFullYear()} Selim Uysal · Software Engineer</span><span>${href(DATA.profile.github,'GitHub')} · ${href(DATA.profile.linktree,'Linktree')} · ${href(`mailto:${DATA.profile.email}`,'Email')}</span></footer>`}
+function sectionHead(kicker,title,description,extra=''){return `<div class="section-heading"><div><span class="kicker">${safe(kicker)}</span><h2>${safe(title)}</h2><p>${safe(description)}</p></div>${extra}</div>`}
+const kinds=p=>p.category==='research'?t('academicFilter'):p.category==='archive'?t('learning'):t('software');
+function projectCard(p,index,compact=false){return `<article class="project-card" data-project="${safe(p.id)}"><div class="card-top"><span class="project-number">${String(index+1).padStart(2,'0')} / ${safe(p.year||'CODE')}</span><span class="project-kind">${safe(kinds(p))}</span></div><h3>${safe(loc(p.name))}</h3><p>${safe(loc(p.description))}</p><div class="tags">${tagList(p.stack,compact?3:4)}</div><div class="project-actions">${links(p)}</div></article>`}
+const select=ids=>ids.map(id=>DATA.projects.find(p=>p.id===id)).filter(Boolean);
+function home(){const work=select(['hayat','video','quran','telegram']),academic=select(['teknofest','oracle','patterns']);const grad=DATA.profile.education;return `${header()}<main id="main"><div class="container"><section class="hero"><div><span class="eyebrow">${t('heroKicker')}</span><h1>${t('hero1')} <em>${t('hero2')}</em></h1><p class="hero-lead">${t('heroLead')}</p><div class="hero-actions"><a class="button button-primary" href="#work">${t('viewWork')} ↗</a><a class="button button-outline" href="./projects.html">${t('viewProjects')}</a></div><div class="hero-notes"><span>Atılım University · 2025</span><span>Web · AI · Automation</span></div></div><div class="hero-visual" role="img" aria-label="Landscape at dusk, illustrating an international outlook"><div class="visual-top"><span>SOFTWARE / RESEARCH</span><span>SU · 2026</span></div><div class="visual-content"><strong>${t('heroVisual')}</strong><p>${t('heroNote')}</p></div></div></section><div class="metrics" aria-label="Profile overview"><div class="metric"><strong>2025</strong><span>${t('degree')}</span></div><div class="metric"><strong>04</strong><span>${t('featured')}</span></div><div class="metric"><strong>03</strong><span>${t('academicWork')}</span></div><div class="metric"><strong>02</strong><span>${t('certTitle')}</span></div></div></div>
+<section class="section" id="work"><div class="container">${sectionHead('01 / WORK',t('featured'),t('featuredLead'),`<a class="plain-link" href="./projects.html">${t('viewAll')} ↗</a>`)}<div class="project-grid">${work.map((p,i)=>projectCard(p,i)).join('')}</div></div></section>
+<section class="section" id="research"><div class="container">${sectionHead('02 / RESEARCH',t('researchTitle'),t('researchIntro'))}<div class="research-band"><div><span class="kicker">RESEARCH STATEMENT</span><h3>${state.lang==='tr'?'Bilgisayarlı görüden güvenilir otonom sistemlere.':'From computer vision to reliable autonomous systems.'}</h3><p>${safe(loc(DATA.researchStatement))}</p></div><div class="research-tags"><h4>${t('researchAreas')}</h4>${['Computer Vision','Autonomous Systems','Robustness & Evaluation','Software Quality'].map(x=>`<span class="tag">${x}</span>`).join('')}</div></div>${sectionHead('UNDERGRADUATE WORK',t('academicWork'),t('academicLead'))}<div class="academic-grid">${academic.map((p,i)=>projectCard(p,i,true)).join('')}</div><p class="section-note">${t('note')}</p></div></section>
+<section class="section" id="experience"><div class="container">${sectionHead('03 / EXPERIENCE',t('experienceTitle'),t('experienceLead'))}<div class="timeline">${DATA.experiences.map(x=>`<article class="experience-card"><time>${safe(x.date)}</time><h3>${safe(x.name)}</h3><strong>${safe(loc(x.kind))}</strong><p>${safe(loc(x.description))}</p></article>`).join('')}</div></div></section>
+<section class="section" id="about"><div class="container">${sectionHead('04 / BACKGROUND',t('aboutTitle'),t('aboutLead'))}<div class="bottom-grid"><div class="info-card"><span class="kicker">${t('edu')}</span><h3>${safe(loc({en:grad.degree,tr:'Yazılım Mühendisliği Lisans'}))}</h3><p>Atılım University · Ankara, Türkiye · 2025</p></div><div class="info-card"><span class="kicker">${t('recognition')}</span>${DATA.honors.filter(h=>h.date==='2023'||h.date==='2024').map((h,i)=>`<div ${i?'class="line"':''}></div><h4>${safe(loc(h.name))}</h4><p>${safe(loc(h.detail))}</p>`).join('')}</div></div></div></section>
+<section class="section" id="certifications"><div class="container">${sectionHead('05 / CREDENTIALS',t('certTitle'),t('certLead'))}<div class="certificate-grid">${DATA.certificates.map(c=>`<article class="certificate"><span class="kicker">${safe(c.issuer)}</span><h3>${safe(loc(c.title))}</h3><p>${safe(c.year)}</p>${href(c.pdf,t('viewCertificate')+' ↗')}${c.url?` &nbsp; · &nbsp; ${href(c.url,t('verify')+' ↗')}`:''}</article>`).join('')}</div></div></section>
+<section class="section" id="cv"><div class="container">${sectionHead('06 / RÉSUMÉS',t('cvTitle'),t('cvLead'))}<div class="cv-grid"><article class="cv-card"><span class="kicker">01 / ACADEMIC</span><h3>${t('academic')}</h3><p>${t('academicCvLead')}</p><a href="./cv.html">${t('openCv')} ↗</a></article><article class="cv-card"><span class="kicker">02 / INDUSTRY</span><h3>${t('industry')}</h3><p>${t('industryCvLead')}</p><a href="./industry-cv.html">${t('openCv')} ↗</a></article></div></div></section>
+<section class="section" id="contact"><div class="container"><div class="contact-panel"><div><span class="kicker">07 / CONTACT</span><h2>${t('contactTitle')}</h2><p>${t('contactLead')}</p></div><div class="contact-links"><a href="mailto:${safe(DATA.profile.email)}" class="button button-primary">${t('email')} ↗</a><a href="${safe(DATA.profile.github)}" class="button button-outline" target="_blank" rel="noopener noreferrer">GitHub ↗</a></div></div></div></section></main>${footer()}`}
+const archive=DATA.archive.map(p=>({...p,category:'archive',stack:[p.technology],links:[{kind:'source',url:p.url}],year:''}));
+const catalog=[...DATA.projects,...archive];
+const normalized=v=>String(v??'').normalize('NFKD').replace(/[\u0300-\u036f]/g,'').replace(/ı/g,'i').toLowerCase().replace(/[^a-z0-9+#]+/g,' ').trim();
+const words=v=>normalized(v).split(/\s+/).filter(Boolean);
+const aliases={pyt:['python'],py:['python'],pyth:['python'],pyhton:['python'],pytjon:['python'],js:['javascript'],ts:['typescript'],reactjs:['react'],ai:['artificial','intelligence','yapay','zeka','yolo'],yapay:['ai','machine','yolo'],zeka:['ai','machine','yolo'],ml:['machine','learning','yolo'],drone:['aerial','yolo'],dron:['aerial','yolo'],iha:['aerial','yolo'],llm:['gemini','language','models'],db:['oracle','database','sql'],veritabani:['oracle','sql','database'],otomasyon:['automation','telegram'],automation:['otomasyon','telegram'],eklenti:['chrome','browser','extension'],goruntu:['vision','yolo','detection'],kuran:['quran','arabic'],quran:['kuran','arabic']};
+function distance(a,b){if(Math.abs(a.length-b.length)>2)return 3;let arr=Array.from({length:b.length+1},(_,i)=>i);for(let i=1;i<=a.length;i++){const v=[i];for(let j=1;j<=b.length;j++){v.push(Math.min(v[j-1]+1,arr[j]+1,arr[j-1]+(a[i-1]===b[j-1]?0:1)));}arr=v;}return arr[b.length]}
+function termScore(q,w){let score=0;for(const [i,term] of [q,...(aliases[q]||[])].entries()){const scale=i===0?1:.85;for(const token of w){if(term===token)score=Math.max(score,scale);else if(term.length>=3&&token.startsWith(term))score=Math.max(score,scale*.72);else if(term.length>=4&&token.includes(term))score=Math.max(score,scale*.48);else if(i===0&&term.length>=4&&distance(term,token)<=(term.length>=8?2:1))score=Math.max(score,.36);}}return score}
+function relevance(p,terms){const fields=[[loc(p.name),12],[p.name?.en||'',11],[p.name?.tr||'',11],[(p.stack||[]).join(' '),10],[loc(p.description),3],[p.description?.en||'',2],[p.description?.tr||'',2],[p.category,1]];let total=0;for(const q of terms){let high=0;for(const [field,weight] of fields){high=Math.max(high,termScore(q,words(field))*weight);}if(!high)return null;total+=high;}return total}
+function filtered(){const terms=words(state.query).slice(0,7);return catalog.map((p,i)=>({p,i,score:terms.length?relevance(p,terms):0})).filter(x=>x.score!==null&&(state.filter==='all'||x.p.category===state.filter)).sort((a,b)=>b.score-a.score||a.i-b.i).map(x=>x.p)}
+function directory(){return `${header()}<main id="main" class="container"><div class="page-hero"><span class="eyebrow">PROJECT DIRECTORY</span><h1>${t('projectsTitle')}</h1><p>${t('projectsLead')}</p></div><section class="search-panel" aria-label="Project search"><div class="search-toolbar"><label class="search-field"><span class="search-icon" aria-hidden="true">⌕</span><input id="query" type="search" autocomplete="off" placeholder="${t('searchPlaceholder')}" value="${safe(state.query)}" aria-label="${t('all')}" aria-controls="results"></label><div class="filter-buttons" role="group" aria-label="Filters">${[['all','allFilter'],['software','softwareFilter'],['research','academicFilter'],['archive','learningFilter']].map(([value,label])=>`<button data-filter="${value}" aria-pressed="${state.filter===value}">${t(label)}</button>`).join('')}</div></div><div class="search-bottom"><div class="suggestions"><span>${t('hint')}:</span>${['pyt','React','AI','Oracle','Telegram'].map(q=>`<button data-query="${q}">${q}</button>`).join('')}</div><span> / &nbsp; ${state.lang==='tr'?'aramaya odaklanır':'focus search'}</span></div></section><div class="directory-results"><p class="directory-status" id="count" role="status" aria-live="polite"></p><div class="project-grid" id="results"></div><p id="empty" class="empty-state" hidden>${t('noResults')}</p></div></main>${footer()}`}
+function drawResults(){const target=document.querySelector('#results');if(!target)return;const list=filtered();target.innerHTML=list.map((p,i)=>projectCard(p,i)).join('');const count=document.querySelector('#count');if(count)count.textContent=`${list.length} ${t('results')}`;const empty=document.querySelector('#empty');if(empty)empty.hidden=list.length!==0;}
+function cv(){const academic=page==='academic-cv';const chosen=select(academic?['teknofest','oracle','patterns']:['hayat','video','quran','telegram']);const skillSet=academic?['Computer Vision','YOLO / SAHI','Machine Learning','SQL','C++','Software Design']:['JavaScript','TypeScript','React','Python','Spring Boot','PostgreSQL','Node.js','Qt'];return `${header()}<main class="container" id="main"><div class="cv-wrapper"><div class="cv-toolbar"><a class="plain-link" href="./index.html">← ${t('cvBack')}</a><button class="button button-primary" data-print>${t('print')} ↗</button></div><article class="cv-paper"><span class="kicker">${academic?'ACADEMIC CV':'SOFTWARE ENGINEERING CV'}</span><h1>Selim Uysal</h1><p class="cv-subtitle">${t(academic?'cvAcademicTitle':'cvIndustryTitle')}</p><div class="cv-inline"><a href="mailto:${safe(DATA.profile.email)}">${safe(DATA.profile.email)}</a><a target="_blank" rel="noopener noreferrer" href="${safe(DATA.profile.github)}">GitHub</a>${academic?`<a href="${safe(DATA.profile.academicCvPdf)}" target="_blank" rel="noopener noreferrer">Full academic CV PDF</a>`:''}</div><p class="cv-intro">${t(academic?'cvAcademicSummary':'cvIndustrySummary')}</p><h2>${t('cvEducation')}</h2><div class="cv-entry"><div class="cv-entry-top"><h3>Atılım University · B.Sc. Software Engineering</h3><small>2025</small></div><p>${state.lang==='tr'?'2023 Güz Dönemi Onur Belgesi':'Fall 2023 Honor Certificate'}</p></div>${academic?`<h2>${t('cvResearch')}</h2><p>${safe(loc(DATA.researchStatement))}</p>`:''}<h2>${t('cvProjects')}</h2>${chosen.map(p=>`<div class="cv-entry"><div class="cv-entry-top"><h3>${safe(loc(p.name))}</h3><small>${safe(p.year)}</small></div><p>${safe(loc(p.description))}</p><p class="cv-tech">${safe(p.stack.join(' · '))}</p><div class="project-actions">${links(p)}</div></div>`).join('')}<h2>${t('cvExperience')}</h2>${DATA.experiences.map(x=>`<div class="cv-entry"><div class="cv-entry-top"><h3>${safe(x.name)} · ${safe(loc(x.kind))}</h3><small>${safe(x.date)}</small></div><p>${safe(loc(x.description))}</p></div>`).join('')}<h2>${t('cvSkills')}</h2><div class="tags">${tagList(skillSet,20)}</div><h2>${t('cvCertificates')}</h2>${DATA.certificates.map(c=>`<div class="cv-entry"><h3>${safe(loc(c.title))}</h3><p>${safe(c.issuer)} · ${safe(c.year)} · ${href(c.pdf,'PDF')}</p></div>`).join('')}</article></div></main>${footer()}`}
+function render(){document.documentElement.lang=state.lang;document.documentElement.dataset.theme=state.theme;document.title=`Selim Uysal · ${page==='home'?'Software Engineer':page==='projects'?t('all'):t(page==='academic-cv'?'academic':'industry')}`;root.innerHTML=page==='home'?home():page==='projects'?directory():cv();if(page==='projects'){drawResults();document.querySelector('#query')?.addEventListener('input',e=>{state.query=e.target.value;drawResults()});document.querySelectorAll('[data-filter]').forEach(b=>b.addEventListener('click',()=>{state.filter=b.dataset.filter;document.querySelectorAll('[data-filter]').forEach(x=>x.setAttribute('aria-pressed',String(x===b)));drawResults()}));document.querySelectorAll('[data-query]').forEach(b=>b.addEventListener('click',()=>{const input=document.querySelector('#query');input.value=b.dataset.query;state.query=input.value;drawResults();input.focus()}));}
+ document.querySelector('[data-lang]')?.addEventListener('click',()=>{state.lang=state.lang==='en'?'tr':'en';save('selim-language',state.lang);render()});document.querySelector('[data-toggle-theme]')?.addEventListener('click',()=>{state.theme=state.theme==='dark'?'light':'dark';save('selim-theme',state.theme);render()});document.querySelector('[data-menu]')?.addEventListener('click',()=>{state.menu=!state.menu;render()});document.querySelector('[data-print]')?.addEventListener('click',()=>window.print());document.querySelectorAll('.mobile-nav a').forEach(a=>a.addEventListener('click',()=>{state.menu=false}));}
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&state.menu){state.menu=false;render()}if(e.key==='/'&&!['INPUT','TEXTAREA'].includes(document.activeElement?.tagName)){const s=document.querySelector('#query');if(s){e.preventDefault();s.focus()}}});
+render();
