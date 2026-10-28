@@ -174,3 +174,8 @@
 @media(max-width:900px){.experience-photo{height:clamp(175px,32vw,270px)}}
 @media(max-width:630px){.experience-photo{height:clamp(160px,52vw,235px)}}
 @media(prefers-reduced-motion:reduce){.experience-photo img{transition:none}.experience-photo:hover img{transform:none}}
+
+/* Academic technical illustrations: matched 16:9 covers, no layout distortion. */
+.academic-grid .project-card{overflow:hidden}
+.academic-grid .project-cover-media{width:calc(100% + 46px);margin:-23px -23px 20px;aspect-ratio:16/9}
+.academic-grid .project-cover-media img{object-fit:contain}
