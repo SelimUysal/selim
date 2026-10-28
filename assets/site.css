@@ -139,3 +139,18 @@
 .hero .button-outline,:root[data-theme="light"] .hero .button-outline{color:var(--ink);background:var(--panel-2);border-color:var(--line)}
 }
 @media(max-width:630px){.hero{margin:16px 0 30px;border-radius:16px}.hero-visual{height:clamp(285px,82vw,420px)}.hero-copy{padding:22px 19px 26px}.hero h1{font-size:clamp(33px,9.4vw,48px);overflow-wrap:break-word}}
+
+/* Restrained featured software project: a single visual anchor among text-first cards. */
+.project-grid > .project-card-featured{grid-column:1/-1;display:grid;grid-template-columns:minmax(0,1.08fr) minmax(0,.92fr);gap:0;padding:0;overflow:hidden;min-height:0;align-items:stretch}
+.project-feature-media{display:flex;align-items:center;min-width:0;overflow:hidden;background:var(--panel-2);text-decoration:none}
+.project-feature-media img{width:100%;height:auto;display:block;object-fit:contain;transition:transform .22s ease}
+.project-feature-media:hover img{transform:scale(1.015)}
+.project-feature-content{padding:clamp(22px,2.6vw,38px);min-width:0;display:flex;flex-direction:column;justify-content:center}
+.project-feature-content .card-top{margin-bottom:13px}
+.project-feature-content h3{font-size:clamp(23px,2.4vw,30px)}
+.project-feature-content p{flex:0 1 auto;font-size:14px;line-height:1.7;margin-bottom:19px}
+.project-feature-content .project-actions{margin-top:22px}
+.project-feature-media:focus-visible{outline:3px solid var(--blue);outline-offset:-4px}
+@media(max-width:900px){.project-grid > .project-card-featured{grid-template-columns:1fr}.project-feature-media img{width:100%;height:auto}.project-feature-content{padding:clamp(21px,4vw,30px)}}
+@media(max-width:630px){.project-grid > .project-card-featured{border-radius:15px}.project-feature-content{padding:21px}.project-feature-content h3{font-size:23px}.project-feature-content p{font-size:13px}}
+@media(prefers-reduced-motion:reduce){.project-feature-media img{transition:none}.project-feature-media:hover img{transform:none}}
