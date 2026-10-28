@@ -1,21 +1,17 @@
 # Selim Uysal — Personal Portfolio
 
-**One professional identity. Two focused experiences.**
+A responsive, bilingual and accessible software engineering portfolio, hosted on GitHub Pages.
 
-Explore my software engineering background, academic work, applications, and projects through my personal website.
+**Live website:** https://selimuysal.github.io/selim/
 
-| Portfolio | Website | Focus |
-|---|---|---|
-| **Academic** | [Academic Portfolio](https://selimuysal.github.io/selim-uysal/) | Education, research interests, undergraduate reports, teaching and academic CV |
-| **Industry** | [Software Engineering Portfolio](https://selimuysal.github.io/selim-uysal/industry.html) | Shipped applications, browser extension, automation, technologies and industry résumé |
-| **All Projects** | [Projects Directory](https://selimuysal.github.io/selim-uysal/projects.html) | Browse projects and open live demos, app-store pages, source code and reports |
+## Architecture
+- `index.html`: main portfolio and instant project search
+- `projects.html`: all software and academic projects
+- `cv.html`, `industry-cv.html`: printable CV views
+- `assets/data.js`: a single source for project links, descriptions and credentials
+- `assets/site.js`: multilingual UI, search, and theme preferences
+- `assets/site.css`: responsive design system
 
-**Website:** Responsive HTML, CSS and JavaScript, EN/TR language switching and light/dark themes. The two portfolios and five pages share one consistent design.
+All data is rendered client-side without a backend. PDF reports and certificates are provided in `assets/`.
 
-**Project content:** Change `assets/content.js` to maintain all verified projects, demo links, certificates and academic content in one place. After edits, run `node scripts/prerender.mjs` to refresh the static English HTML snapshots.
-
-**Publishing:** GitHub Pages → Settings → Pages → Deploy from a branch → `main` → `/(root)`.
-
-[GitHub](https://github.com/SelimUysal) · [Linktree](https://linktr.ee/selim_uysal)
-
-See [SETUP.md](./SETUP.md) for deployment and maintenance instructions.
+To deploy with GitHub Pages: **Settings → Pages → Deploy from a branch → main → /(root)**.
