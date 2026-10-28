@@ -122,3 +122,20 @@
  .hero .hero-notes{margin-top:20px;font-size:11px}
 }
 @media(prefers-reduced-motion:reduce){.hero .button{transition:none}}
+
+/* Unified image/text hero and distinct theme-aware contrast. */
+.hero{--hero-fg:#fff;--hero-muted:#dce7f2;--hero-accent:#a0caff;--hero-gradient:linear-gradient(90deg,#091827 0%,rgba(9,24,39,.99) 27%,rgba(9,24,39,.92) 43%,rgba(9,24,39,.55) 60%,rgba(9,24,39,.06) 83%,transparent 98%)}
+:root[data-theme="light"] .hero{--hero-fg:#152239;--hero-muted:#344660;--hero-accent:#235b9c;--hero-gradient:linear-gradient(90deg,#f5f8fd 0%,rgba(245,248,253,.99) 25%,rgba(245,248,253,.94) 43%,rgba(245,248,253,.60) 60%,rgba(245,248,253,.07) 83%,transparent 98%);background:#f5f8fd}
+.hero-copy,.hero h1{color:var(--hero-fg)}.hero h1 em,.hero .eyebrow{color:var(--hero-accent)}.hero .hero-lead,.hero .hero-notes{color:var(--hero-muted)}
+.hero-visual::before{background:var(--hero-gradient)}
+:root[data-theme="light"] .hero .button-outline{color:#152239;background:rgba(255,255,255,.86);border-color:#c0d0e1}
+@media(max-width:900px){
+.hero{display:flex;flex-direction:column;align-items:stretch;gap:0;min-height:0;overflow:hidden;border:1px solid var(--line);border-radius:20px;background:var(--panel);box-shadow:var(--shadow);padding:0}
+.hero-visual{position:relative;order:-1;inset:auto;flex:0 0 auto;display:block;width:100%;height:clamp(330px,62vw,520px);border:0;border-radius:0;box-shadow:none}
+.hero-visual .portrait-photo{width:100%;height:100%;object-fit:cover;object-position:50% 26%}
+.hero-visual::before{background:linear-gradient(0deg,var(--panel),transparent 40%);opacity:.25}.hero-visual::after{display:none}
+.hero-copy{position:relative;z-index:2;order:0;flex:0 0 auto;width:100%;max-width:none;padding:clamp(24px,4vw,42px);background:var(--panel);color:var(--ink)}
+.hero h1{color:var(--ink)}.hero h1 em,.hero .eyebrow{color:var(--blue)}.hero .hero-lead{color:var(--muted)}.hero .hero-notes{color:var(--faint)}
+.hero .button-outline,:root[data-theme="light"] .hero .button-outline{color:var(--ink);background:var(--panel-2);border-color:var(--line)}
+}
+@media(max-width:630px){.hero{margin:16px 0 30px;border-radius:16px}.hero-visual{height:clamp(285px,82vw,420px)}.hero-copy{padding:22px 19px 26px}.hero h1{font-size:clamp(33px,9.4vw,48px);overflow-wrap:break-word}}
