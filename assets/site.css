@@ -190,3 +190,6 @@
 .bottom-grid .info-card {
   background: linear-gradient(115deg, var(--panel), var(--panel-2));
 }
+
+/* Homepage section headings stay title-only, even when an older JS bundle is cached. */
+body[data-page="home"] .section-heading > div > p {display:none !important;}
