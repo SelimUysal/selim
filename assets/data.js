@@ -110,7 +110,7 @@ export const DATA = {
       "links": [
         {
           "kind": "report",
-          "url": "./assets/reports/se461-design-patterns.pdf"
+          "url": "./assets/reports/design_patterns_SE461.pdf"
         }
       ],
       "category": "research",
