@@ -1,4 +1,4 @@
-import { DATA } from './data.js?v=experience-photos-20261028';
+import { DATA } from './data.js?v=design-patterns-report-20261028';
 
 const root=document.querySelector('#app');
 const page=document.body.dataset.page;
