@@ -31,5 +31,6 @@ jobs:
           git add assets/og-cover.png
           if ! git diff --cached --quiet; then
             git commit -m "Generate social preview from real portfolio assets"
-            git push
+            git -c rebase.autoStash=true pull --rebase origin main
+            git push origin HEAD:main
           fi
