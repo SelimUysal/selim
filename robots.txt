@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://selimuysal.github.io/selim-uysal/sitemap.xml
