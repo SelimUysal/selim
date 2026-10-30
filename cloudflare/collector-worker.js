@@ -103,8 +103,7 @@ export default {
  async scheduled(_,env,ctx){
   if(!env.DB)return;
   ctx.waitUntil(env.DB.batch([
-   env.DB.prepare("UPDATE analytics_detail_events SET ip_ciphertext=NULL WHERE day <= date('now','-7 days')"),
-   env.DB.prepare("DELETE FROM analytics_detail_events WHERE day < date('now','-90 days')"),
+   env.DB.prepare("DELETE FROM analytics_detail_events WHERE day < date('now','-365 days')"),
    env.DB.prepare("DELETE FROM analytics_daily_summary WHERE day < date('now','-365 days')"),
    env.DB.prepare("DELETE FROM analytics_click_targets WHERE day < date('now','-365 days')")
   ]))

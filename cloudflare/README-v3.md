@@ -29,7 +29,7 @@ This directory contains a migration from the existing cookieless daily aggregate
    ```
    Add the **exact same value** to both `selim-analytics-collector` and `selim-analytics-reports` as **Secret** `ANALYTICS_ENCRYPTION_KEY`. Never send this value in chat or commit it. Keep `SESSION_SECRET` separate and unchanged. Both Workers must have D1 binding `DB`.
 5. Deploy the collector code then the reports code manually **after** schema + secret setup, or configure GitHub Actions with `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` secrets (least privilege) to run the workflow manually.
-6. Collector Settings > Triggers: daily cron `0 3 * * *` (UTC). Retention: encrypted IP <=7 days; detailed rows 90 days; aggregate counters 365 days.
+6. Collector Settings > Triggers: daily cron `0 3 * * *` (UTC). Retention: encrypted IP, detailed events and aggregate counters up to 365 days, subject to daily cleanup.
 7. Verify collector `/health` replies `version: 3`, reports GitHub OAuth login works, and `/api/details` is inaccessible to non-owner.
 8. Only then merge `analytics-v3-staging` into `main`, so GitHub Pages loads `assets/consent-analytics.js` **instead of** the legacy `assets/cookieless-analytics.js`. The three HTML pages in the staging branch already perform the substitution.
 9. In an incognito browser: Reject => no /events; Basic => aggregate increment; Extended => detailed rows + encrypted IP; opt-out => delete and no further tracking; DNT/GPC => no events. Verify project links and reports on mobile.

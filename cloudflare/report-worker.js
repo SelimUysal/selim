@@ -180,7 +180,7 @@ td:last-child,th:last-child{text-align:right;font-variant-numeric:tabular-nums}
 <p id="message" role="status">Rapor yükleniyor…</p>
 <section class="grid metrics" id="metrics"></section>
 <section class="card"><h2>Günlük sayfa görüntülemeleri (UTC)</h2><div id="chart" role="img" aria-label="Günlük sayfa görüntüleme grafiği"></div></section>
-<section class="panels" id="panels"></section><section class="card"><h2>İzinli ayrıntılı olay kayıtları</h2><p>IP yalnızca açık izinli ziyaretçiler için şifreli tutulur ve 7 gün sonra silinir.</p><div class="tablewrap" id="details"></div></section>
+<section class="panels" id="panels"></section><section class="card"><h2>İzinli ayrıntılı olay kayıtları</h2><p>İzinli IP verileri ve ayrıntılı olay kayıtları en fazla 365 gün saklanır; süresi dolan kayıtlar günlük temizlik göreviyle silinir.</p><div class="tablewrap" id="details"></div></section>
 <footer><small>Toplu sayılar benzersiz kişi sayısı değildir. CSV dosyaları kişisel veri içerebilir.</small></footer>
 </main></body></html>`;
 const SCRIPT = String.raw`"use strict";
