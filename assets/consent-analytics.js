@@ -77,7 +77,7 @@ async function begin(choice){if(started||DNT||choice==="reject")return;mode=choi
 if(mode==="extended"){token=storage()?.getItem(TOKEN)||uuid();sid=session()?.getItem(SESSION)||uuid();try{storage()?.setItem(TOKEN,token);session()?.setItem(SESSION,sid)}catch{};since=document.visibilityState==="visible"?performance.now():0;sc()}
 const details=mode==="extended"?await device():null;if(!started)return;send("page_view","-","",{referrer_host:host(),...(details?{device:details}:{})})}
 async function forget(){const t=token||storage()?.getItem(TOKEN);if(t)try{await fetch(ENDPOINT+"/forget",{method:"POST",mode:"cors",credentials:"omit",headers:{"Content-Type":"application/json"},body:JSON.stringify({visitor_token:t})})}catch{};token="";sid="";try{storage()?.removeItem(TOKEN);session()?.removeItem(SESSION)}catch{}}
-function choose(choice){const old=mode;started=false;mode="reject";since=0;const work=async()=>{if(choice!=="extended"&&old==="extended")await forget();write(choice);document.querySelector("#selim-analytics-prefs")?.remove();if(choice!=="reject")begin(choice)};work()}
+function choose(choice){const old=mode==="extended"?"extended":read();started=false;mode="reject";since=0;const work=async()=>{if(choice!=="extended"&&old==="extended")await forget();write(choice);document.querySelector("#selim-analytics-prefs")?.remove();if(choice!=="reject")begin(choice)};work()}
 function el(t,txt){const n=document.createElement(t);if(txt!=null)n.textContent=txt;return n}
 function prefs(){document.querySelector("#selim-analytics-prefs")?.remove();
 const pane=el("section");pane.id="selim-analytics-prefs";pane.setAttribute("role","dialog");pane.setAttribute("aria-label","Ziyaretçi analiz tercihleri");
