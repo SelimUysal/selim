@@ -15,6 +15,7 @@ const PAGES = new Set([
 const TYPES = new Set(["page_view", "link_click"]);
 const CATEGORIES = new Set(["-", "pdf", "github", "youtube", "linkedin", "project", "external", "internal"]);
 const DEVICES = new Set(["mobile", "tablet", "desktop", "unknown"]);
+const ALLOWED_TARGETS = new Set(["project:teknofest:report","project:oracle:report","project:patterns:report","project:hayat:live","project:hayat:source","project:hayat:video","project:video:store","project:video:source","project:telegram:source","project:telegram:video","project:quran:live","project:quran:source","project:python-exercises:source","project:c-exercises:source","project:sql-resources:source","certificate:genai-llm:pdf","certificate:genai-llm:verify","certificate:oracle-sql:pdf","certificate:deneyap-instructor:pdf","volunteering:video","case:rims:video","case:teknofest:details","case:rims:details","navigation:projects"]);
 const responseHeaders = Object.freeze({
   "Access-Control-Allow-Origin": ORIGIN,
   "Access-Control-Allow-Methods": "POST, OPTIONS",
@@ -36,7 +37,9 @@ function parseEvent(body) {
   if (!TYPES.has(event_type) || !PAGES.has(page_path) ||
       !CATEGORIES.has(link_category) || !DEVICES.has(device_group) ||
       (event_type === "page_view" && link_category !== "-")) return null;
-  return { event_type, page_path, link_category, device_group };
+  const target_key = typeof body.target_key === "string" ? body.target_key : "";
+  if (target_key && (event_type!=="link_click" || !ALLOWED_TARGETS.has(target_key))) return null;
+  return { event_type, page_path, link_category, device_group, target_key };
 }
 async function accept(request, env) {
   if (request.headers.get("Origin") !== ORIGIN) return output({ error: "Origin not allowed" }, 403);
@@ -66,6 +69,16 @@ async function accept(request, env) {
        ON CONFLICT(day,event_type,page_path,link_category,country_code,device_group)
        DO UPDATE SET event_count = event_count + 1`
     ).bind(day,ev.event_type,ev.page_path,ev.link_category,country,ev.device_group).run();
+    if (ev.target_key) {
+      // The original category count is already committed. This second aggregate
+      // enriches reports and never stores per-visitor records.
+      await env.DB.prepare(
+        `INSERT INTO analytics_click_targets (day,page_path,target_key,event_count)
+         VALUES (?,?,?,1)
+         ON CONFLICT(day,page_path,target_key)
+         DO UPDATE SET event_count=event_count+1`
+      ).bind(day,ev.page_path,ev.target_key).run();
+    }
     return output({ accepted: true }, 202);
   } catch {
     return output({ error: "Collection unavailable" }, 503);
@@ -82,7 +95,10 @@ export default {
   async scheduled(_event, env, ctx) {
     if (!env.DB) return;
     ctx.waitUntil(
-      env.DB.prepare("DELETE FROM analytics_daily_summary WHERE day < date('now','-90 days')").run()
+      Promise.all([
+        env.DB.prepare("DELETE FROM analytics_daily_summary WHERE day < date('now','-90 days')").run(),
+        env.DB.prepare("DELETE FROM analytics_click_targets WHERE day < date('now','-90 days')").run()
+      ])
     );
   }
 };
