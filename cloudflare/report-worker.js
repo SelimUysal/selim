@@ -5,6 +5,11 @@
  * Bind D1 as DB and configure Worker Variables & Secrets:
  *   GITHUB_CLIENT_ID (plain text), GITHUB_CLIENT_SECRET (Secret),
  *   SESSION_SECRET (Secret, strong random 32+ bytes).
+ * Optional system observability, available ONLY to the GitHub owner:
+ *   CLOUDFLARE_ACCOUNT_ID (plain), CLOUDFLARE_MONITOR_TOKEN (read-only Secret).
+ *   Token scopes: Account Analytics Read + Workers Scripts Read.
+ *   Never expose tokens in HTML, JSON or public GitHub repository.
+
  *
  * OAuth app callback (exact):
  * https://selim-analytics-reports.uys-selim.workers.dev/auth/callback
@@ -171,7 +176,16 @@ td:last-child,th:last-child{text-align:right;font-variant-numeric:tabular-nums}
 .tablewrap{overflow-x:auto}#message{min-height:20px}#chart{display:flex;align-items:end;gap:5px;height:130px;padding:10px 0;border-bottom:1px solid #39536b}
 #chart span{flex:1;min-width:3px;max-width:48px;background:linear-gradient(0deg,#2d8ac1,#77c4b6);border-radius:4px 4px 0 0;position:relative}
 #chart span:hover:after{content:attr(title);position:absolute;bottom:100%;background:#061522;color:white;white-space:nowrap;font-size:11px;padding:5px;z-index:1}
-@media(max-width:800px){.grid{grid-template-columns:repeat(2,1fr)}.panels{grid-template-columns:1fr}.card{padding:16px}}
+#system-workers{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.system-worker{border:1px solid #41617e;border-radius:12px;padding:16px;background:#12263b}
+.system-worker h3{margin:0 0 12px;font-size:17px}
+.system-meta{margin-bottom:12px;color:#afc8dd;font-size:13px}
+.system-stats{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:12px 0}
+.system-stats>div{background:#1b3954;padding:9px;border-radius:9px;font-size:12px}
+.system-stats b{display:block;font-size:19px;color:#fff;margin:4px 0}
+.system-worker summary{cursor:pointer;color:#b3d5f2;font-weight:650;padding:8px 0}
+.system-worker table th:last-child,.system-worker table td:last-child{text-align:left}
+@media(max-width:800px){.grid{grid-template-columns:repeat(2,1fr)}.panels,#system-workers{grid-template-columns:1fr}.card{padding:16px}}
 </style>
 <script src="/app.js" defer></script></head>
 <body><main>
@@ -180,7 +194,12 @@ td:last-child,th:last-child{text-align:right;font-variant-numeric:tabular-nums}
 <p id="message" role="status">Rapor yükleniyor…</p>
 <section class="grid metrics" id="metrics"></section>
 <section class="card"><h2>Sayfa görüntülemeleri: günlük, yıllık görünümde aylık (UTC)</h2><div id="chart" role="img" aria-label="Günlük sayfa görüntüleme grafiği"></div></section>
-<section class="panels" id="panels"></section><section class="card"><h2>İzinli ayrıntılı olay kayıtları</h2><p>İzinli IP verileri ve ayrıntılı olay kayıtları en fazla 365 gün saklanır; süresi dolan kayıtlar günlük temizlik göreviyle silinir.</p><div class="tablewrap" id="details"></div></section>
+<section class="panels" id="panels"></section>
+<section class="card" aria-labelledby="system-heading"><h2 id="system-heading">Cloudflare Sistem Durumu</h2>
+<p>Collector ve Reports Worker sürümleri, dağıtım geçmişi ve son 24 saatin performans metrikleri. Bu bilgiler ziyaretçi istatistiklerinden ayrıdır.</p>
+<p id="system-message" role="status">Sistem bilgileri yükleniyor…</p>
+<div id="system-workers"></div></section>
+<section class="card"><h2>İzinli ayrıntılı olay kayıtları</h2><p>İzinli IP verileri ve ayrıntılı olay kayıtları en fazla 365 gün saklanır; süresi dolan kayıtlar günlük temizlik göreviyle silinir.</p><div class="tablewrap" id="details"></div></section>
 <footer><small>Toplu sayılar benzersiz kişi sayısı değildir. CSV dosyaları kişisel veri içerebilir.</small></footer>
 </main></body></html>`;
 const SCRIPT = String.raw`"use strict";
@@ -292,10 +311,61 @@ function showDetails(rows){const root=q("#details");root.replaceChildren();const
  const cell=el("td"),details=el("details"),title=el("summary","Görüntüle"),pre=el("pre",JSON.stringify(row,null,2));pre.style.whiteSpace="pre-wrap";pre.style.wordBreak="break-word";details.append(title,pre);cell.append(details);tr.append(cell);t.append(tr)}
  if(!rows.length){const tr=el("tr"),td=el("td","Henüz izinli ayrıntılı kayıt yok.");td.colSpan=7;tr.append(td);t.append(tr)}
  root.append(t)}
+function systemCell(value){return value===null||value===undefined||value===""?"—":String(value)}
+function systemDate(iso){if(!iso)return "—";const dt=new Date(iso);return Number.isFinite(dt.getTime())?dt.toLocaleString("tr-TR",{timeZone:"Europe/Istanbul"}):"—"}
+function systemMetric(box,title,val){const div=el("div");div.append(el("span",title),el("b",systemCell(val)));box.append(div)}
+function systemTable(rows,columns){
+  const wrap=el("div",undefined,"tablewrap"),tbl=el("table"),head=el("tr");
+  for(const [label] of columns)head.append(el("th",label));tbl.append(head);
+  for(const row of rows){const tr=el("tr");for(const [,fn] of columns)tr.append(el("td",systemCell(fn(row))));tbl.append(tr)}
+  if(!rows.length){const tr=el("tr"),td=el("td","Kayıt yok veya Cloudflare API yanıt vermedi.");td.colSpan=columns.length;tr.append(td);tbl.append(tr)}
+  wrap.append(tbl);return wrap
+}
+function showSystem(data){
+  const root=q("#system-workers");root.replaceChildren();
+  for(const worker of data.workers||[]){
+    const section=el("section",undefined,"system-worker");section.append(el("h3",worker.name));
+    const active=worker.active;
+    section.append(el("p",active?"Aktif sürüm: "+systemCell(active.versions.map(v=>v.versionId.slice(0,8)+" ("+v.percentage+"%)").join(" · ")):"Aktif dağıtım bilgisi bulunamadı.","system-meta"));
+    const m=worker.metrics||{},stats=el("div",undefined,"system-stats");
+    systemMetric(stats,"İstekler · son 24 saat",m.requests);
+    systemMetric(stats,"Ortalama istek/sn · 24 saat",m.avgRequestsPerSecond===null||m.avgRequestsPerSecond===undefined?"—":m.avgRequestsPerSecond);
+    systemMetric(stats,"Hata oranı · 24 saat",m.errorRatePercent===null||m.errorRatePercent===undefined?"—":m.errorRatePercent+"%");
+    systemMetric(stats,"Ortanca CPU · 24 saat",m.medianCpuMs===null||m.medianCpuMs===undefined?"—":m.medianCpuMs+" ms");
+    section.append(stats);
+    if(active){section.append(el("p","Son dağıtım: "+systemDate(active.createdOn)+" · "+systemCell(active.source)+" · "+systemCell(active.triggeredBy),"system-meta"))}
+    const deploys=el("details"),deployTitle=el("summary","Dağıtım geçmişi ("+(worker.deployments||[]).length+")");
+    deploys.append(deployTitle,systemTable(worker.deployments||[],[
+       ["Dağıtım",r=>r.id.slice(0,8)],["Sürüm / trafik",r=>(r.versions||[]).map(v=>v.versionId.slice(0,8)+" · "+v.percentage+"%").join(", ")],
+       ["Kaynak",r=>r.source],["Tetikleyen",r=>r.triggeredBy||r.author],["Tarih",r=>systemDate(r.createdOn)],["Mesaj",r=>r.message]
+    ]));section.append(deploys);
+    const versions=el("details"),versionsTitle=el("summary","Sürüm geçmişi ("+(worker.versions||[]).length+")");
+    versions.append(versionsTitle,systemTable(worker.versions||[],[
+      ["Sürüm",r=>r.id.slice(0,8)],["Kaynak",r=>r.source],["Oluşturan",r=>r.author],["Tarih",r=>systemDate(r.createdOn)],["Mesaj",r=>r.message]
+    ]));section.append(versions);
+    if(worker.warnings?.length)section.append(el("p","Erişilemeyen alanlar: "+worker.warnings.join(", "),"system-meta"));
+    root.append(section);
+  }
+}
+async function refreshSystem(){
+  q("#system-message").textContent="Cloudflare verileri yükleniyor…";
+  try{
+    const response=await fetch("/api/system",{credentials:"same-origin",cache:"no-store"});
+    const data=await response.json();
+    if(response.status===503&&data.error==="not_configured"){
+      q("#system-message").textContent="Cloudflare API bağlantısı kurulmadı. Reports Worker'a CLOUDFLARE_ACCOUNT_ID ve salt-okunur CLOUDFLARE_MONITOR_TOKEN eklenmelidir.";
+      q("#system-workers").replaceChildren();return
+    }
+    if(!response.ok)throw Error("Cloudflare API erişimi başarısız ("+response.status+").");
+    showSystem(data);
+    q("#system-message").textContent="Son 24 saatlik Worker ölçümleri; Cloudflare API'nin sağladığı geçmiş kayıtlar gösteriliyor. Gerçek zamanlı istek/sn değildir.";
+  }catch(e){q("#system-message").textContent="Sistem bilgileri alınamadı. Ziyaretçi raporları etkilenmez."}
+}
+
 q("#export").addEventListener("click",()=>{if(confirm("CSV izinli kişisel verileri içerebilir. İndirilsin mi?"))location.href="/api/export?days="+q("#period").value});
-q("#refresh").addEventListener("click",refresh);
+q("#refresh").addEventListener("click",()=>{refresh();refreshSystem()});
 q("#period").addEventListener("change",refresh);
-refresh();`;
+refresh();refreshSystem();`;
 async function summary(env, days) {
   const since = new Date(Date.now()-(days-1)*86400000).toISOString().slice(0,10);
   const sql = (query) => env.DB.prepare(query).bind(since).all().then(r=>r.results||[]);
@@ -359,6 +429,104 @@ async function exportCsv(env,days){
  const lines=[cols.join(","),...rows.map(r=>cols.map(k=>csvCell(k==="device"?JSON.stringify(r.device):r[k])).join(","))];
  return new Response("\uFEFF"+lines.join("\r\n"),{headers:{"Content-Type":"text/csv; charset=utf-8","Content-Disposition":'attachment; filename="selim-private-analytics.csv"',"Cache-Control":"no-store","X-Content-Type-Options":"nosniff"}})
 }
+
+const OBSERVED_WORKERS=["selim-analytics-collector","selim-analytics-reports"];
+function cloudflareReady(env){
+  return typeof env.CLOUDFLARE_ACCOUNT_ID==="string" &&
+    /^[a-f0-9]{32}$/i.test(env.CLOUDFLARE_ACCOUNT_ID) &&
+    typeof env.CLOUDFLARE_MONITOR_TOKEN==="string" &&
+    env.CLOUDFLARE_MONITOR_TOKEN.length>=20;
+}
+async function cloudflareApi(env,url,options={}){
+  const response=await fetch(url,{
+    ...options,
+    headers:{"Authorization":"Bearer "+env.CLOUDFLARE_MONITOR_TOKEN,"Accept":"application/json",...(options.headers||{})},
+    signal:AbortSignal.timeout(10000)
+  });
+  if(!response.ok)throw Error("Cloudflare HTTP "+response.status);
+  const data=await response.json();
+  if(data.success===false||data.errors?.length)throw Error("Cloudflare API refused request");
+  return data;
+}
+function monitorDeployment(item){
+  return {
+    id:String(item.id||""),
+    createdOn:item.created_on||null,
+    source:item.source||null,
+    author:item.author_email||null,
+    triggeredBy:item.annotations?.["workers/triggered_by"]||null,
+    message:item.annotations?.["workers/message"]||null,
+    versions:(item.versions||[]).map(v=>({versionId:String(v.version_id||""),percentage:Number(v.percentage||0)}))
+  };
+}
+function monitorVersion(item){
+  const metadata=item.metadata||{};
+  return {
+    id:String(item.id||""),
+    createdOn:metadata.created_on||null,
+    source:metadata.source||null,
+    author:metadata.author_email||null,
+    message:metadata.annotations?.["workers/message"]||null
+  };
+}
+async function monitorHistory(env,workerName){
+  const base="https://api.cloudflare.com/client/v4/accounts/"+env.CLOUDFLARE_ACCOUNT_ID+
+      "/workers/scripts/"+encodeURIComponent(workerName);
+  const [deployRes,versionRes]=await Promise.allSettled([
+    cloudflareApi(env,base+"/deployments?per_page=25"),
+    cloudflareApi(env,base+"/versions?per_page=50")
+  ]);
+  const deploys=deployRes.status==="fulfilled"?(deployRes.value.result?.deployments||[]).map(monitorDeployment):[];
+  const versions=versionRes.status==="fulfilled"?(versionRes.value.result?.items||[]).map(monitorVersion):[];
+  const warnings=[];
+  if(deployRes.status==="rejected")warnings.push("dağıtım geçmişi");
+  if(versionRes.status==="rejected")warnings.push("sürüm geçmişi");
+  return {deployments:deploys,versions,active:deploys[0]||null,warnings};
+}
+async function monitorMetrics(env,workerName){
+  const end=new Date(),start=new Date(end.getTime()-86400000);
+  const query=`query WorkerMetrics($accountTag: string, $datetimeStart: string, $datetimeEnd: string, $scriptName: string) {
+    viewer { accounts(filter:{accountTag:$accountTag}) {
+      workersInvocationsAdaptive(limit:1,filter:{
+        scriptName:$scriptName, datetime_geq:$datetimeStart, datetime_leq:$datetimeEnd
+      }) { sum { requests errors } quantiles { cpuTimeP50 } }
+    }}
+  }`;
+  const data=await cloudflareApi(env,"https://api.cloudflare.com/client/v4/graphql",{
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({query,variables:{
+      accountTag:env.CLOUDFLARE_ACCOUNT_ID,
+      datetimeStart:start.toISOString(),
+      datetimeEnd:end.toISOString(),
+      scriptName:workerName
+    }})
+  });
+  const result=data.data?.viewer?.accounts?.[0]?.workersInvocationsAdaptive?.[0];
+  if(!result)return {requests:null,avgRequestsPerSecond:null,errorRatePercent:null,medianCpuMs:null};
+  const requests=Number(result.sum?.requests);
+  const errors=Number(result.sum?.errors);
+  const cpu=Number(result.quantiles?.cpuTimeP50);
+  return {
+    requests:Number.isFinite(requests)?requests:null,
+    avgRequestsPerSecond:Number.isFinite(requests)?Number((requests/86400).toFixed(4)):null,
+    errorRatePercent:Number.isFinite(errors)&&requests>0?Number((errors/requests*100).toFixed(2)):null,
+    medianCpuMs:Number.isFinite(cpu)?Number((cpu/1000).toFixed(3)):null
+  };
+}
+async function systemStatus(env){
+  const workers=await Promise.all(OBSERVED_WORKERS.map(async name=>{
+    const [history,metrics]=await Promise.allSettled([monitorHistory(env,name),monitorMetrics(env,name)]);
+    const logs=history.status==="fulfilled"?history.value:{deployments:[],versions:[],active:null,warnings:["dağıtım geçmişi","sürüm geçmişi"]};
+    return {
+      name,...logs,
+      metrics:metrics.status==="fulfilled"?metrics.value:null,
+      warnings:[...logs.warnings,...(metrics.status==="rejected"?["performans metrikleri"]:[])]
+    };
+  }));
+  return {generatedAt:new Date().toISOString(),window:"24h",workers};
+}
+
 export default {
   async fetch(request, env) {
     const url=new URL(request.url);
@@ -376,6 +544,11 @@ export default {
     }
     if(path==="/")return new Response(DOCUMENT,{headers:HTML_HEADERS});
     if(path==="/app.js")return new Response(SCRIPT,{headers:JS_HEADERS});
+    if(path==="/api/system"){
+      if(!cloudflareReady(env))return json({error:"not_configured"},503);
+      try{return json(await systemStatus(env));}
+      catch{return json({error:"system_unavailable"},503);}
+    }
     if(path==="/api/summary"){
       const days=Number(url.searchParams.get("days")||30);
       if(![7,30,90,365].includes(days))return json({error:"Invalid period"},400);
