@@ -5,7 +5,7 @@
  * Enable only after private D1 aggregate schema and Worker have been deployed.
  */
 const COLLECTOR_URL = "https://selim-analytics-collector.uys-selim.workers.dev/events";
-const TRACKING_ENABLED = false; // Enable after backend verification and privacy review.
+const TRACKING_ENABLED = false; // Switch to true after retention Cron and privacy review.
 const PAGE_ALLOWLIST = new Set([
   "/selim/", "/selim/index.html", "/selim/projects.html", "/selim/case-studies.html"
 ]);
@@ -31,7 +31,7 @@ function track(event_type, link_category="-") {
     return;
   // No identifying information enters the payload.
   const body = JSON.stringify({
-    event_type, page_path: location.pathname,
+    event_type, page_path: location.pathname === "/selim/" ? "/selim/index.html" : location.pathname,
     link_category, device_group: deviceGroup()
   });
   fetch(COLLECTOR_URL, {
