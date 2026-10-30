@@ -246,7 +246,8 @@ async function refresh(){
       ["En çok açılan sayfalar",report.pages],
       ["Ülkeler",report.countries],
       ["Cihaz grupları",report.devices],
-      ["Tıklama türleri",report.categories]
+      ["Tıklama türleri",report.categories],
+      ["Proje, belge ve bağlantı detayları",report.targets]
     ].forEach(([title,rows])=>panels.append(groupTable(title,rows)));
     q("#message").textContent=report.periodDays+" günlük toplu kayıtlar. Günler UTC'ye göredir.";
   }catch(error){q("#message").textContent=error.message;}
@@ -257,7 +258,7 @@ refresh();`;
 async function summary(env, days) {
   const since = new Date(Date.now()-(days-1)*86400000).toISOString().slice(0,10);
   const sql = (query) => env.DB.prepare(query).bind(since).all().then(r=>r.results||[]);
-  const [totals,pages,countries,devices,categories,timeline] = await Promise.all([
+  const [totals,pages,countries,devices,categories,timeline,targets] = await Promise.all([
     sql(`SELECT event_type AS name, SUM(event_count) AS count
       FROM analytics_daily_summary WHERE day>=? GROUP BY event_type`),
     sql(`SELECT page_path AS name, SUM(event_count) AS count
@@ -274,14 +275,17 @@ async function summary(env, days) {
       GROUP BY link_category ORDER BY count DESC LIMIT 20`),
     sql(`SELECT day AS name, SUM(event_count) AS count
       FROM analytics_daily_summary WHERE day>=? AND event_type='page_view'
-      GROUP BY day ORDER BY day ASC LIMIT 90`)
+      GROUP BY day ORDER BY day ASC LIMIT 90`),
+    sql(`SELECT target_key AS name, SUM(event_count) AS count
+      FROM analytics_click_targets WHERE day>=?
+      GROUP BY target_key ORDER BY count DESC LIMIT 80`)
   ]);
   const views=Number(totals.find(r=>r.name==="page_view")?.count||0);
   const clicks=Number(totals.find(r=>r.name==="link_click")?.count||0);
   return { periodDays:days, metrics:{
       views,clicks,clickRate:views?Math.round(clicks/views*100):0,
       activeDays:timeline.length
-    }, pages,countries,devices,categories,timeline };
+    }, pages,countries,devices,categories,timeline,targets };
 }
 export default {
   async fetch(request, env) {
