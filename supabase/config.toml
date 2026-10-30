@@ -1,0 +1,4 @@
+# The public endpoint handles anonymous events and owner auth internally.
+# Never trust the calling browser to authorize access to reports.
+[functions.portfolio-analytics]
+verify_jwt = false
