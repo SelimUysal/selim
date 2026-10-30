@@ -1,22 +1,31 @@
 /**
- * PRIVATE portfolio reporting dashboard.
+ * Selim Portfolio — private analytics, FREE Github OAuth authorization.
+ * Does not require Cloudflare Zero Trust / payment card.
  *
- * Cloudflare Workers > create SECOND Worker (selim-analytics-reports).
- * Before using it:
- *  - Enable WORKER-LEVEL Cloudflare Access (protect production AND previews).
- *  - Access policy: ALLOW only the owner's verified email address.
- *  - Bind D1: DB -> selim-portfolio-analytics.
- *  - Set OWNER_EMAIL as an encrypted Worker secret with the same owner email.
+ * Bind D1 as DB and configure Worker Variables & Secrets:
+ *   GITHUB_CLIENT_ID (plain text), GITHUB_CLIENT_SECRET (Secret),
+ *   SESSION_SECRET (Secret, strong random 32+ bytes).
  *
- * Fail closed: without ctx.access, owner email or DB, no report is served.
- * Never put this Worker URL in public portfolio navigation or publish secrets
- * in the GitHub repo.
+ * OAuth app callback (exact):
+ * https://selim-analytics-reports.uys-selim.workers.dev/auth/callback
+ * Only GitHub numeric user ID 108689929 (SelimUysal) may view reports.
+ * Fail closed on missing credentials. No public data read route.
  */
+const REPORT_BASE = "https://selim-analytics-reports.uys-selim.workers.dev";
+const OWNER_GITHUB_ID = 108689929;
+const COOKIE_SESSION = "__Host-selim_report_session";
+const COOKIE_OAUTH_STATE = "__Host-selim_oauth_state";
+const COOKIE_PKCE = "__Host-selim_oauth_pkce";
+const SESSION_SECONDS = 8 * 3600;
+const enc = new TextEncoder();
+const dec = new TextDecoder();
+
 const REPORT_HEADERS = {
   "Content-Type": "application/json; charset=utf-8",
   "Cache-Control": "no-store, private",
   "X-Content-Type-Options": "nosniff",
   "X-Frame-Options": "DENY",
+  "X-Robots-Tag": "noindex, nofollow, noarchive",
   "Referrer-Policy": "no-referrer",
 };
 const HTML_HEADERS = {
@@ -26,14 +35,120 @@ const HTML_HEADERS = {
 };
 const JS_HEADERS = { ...REPORT_HEADERS, "Content-Type": "application/javascript; charset=utf-8" };
 function json(data, status=200) { return Response.json(data,{status,headers:REPORT_HEADERS}); }
-async function onlyOwner(ctx, env) {
-  const owner = (env.OWNER_EMAIL || "").trim().toLowerCase();
-  if (!owner || !env.DB || !ctx.access) return false;
-  try {
-    const identity = await ctx.access.getIdentity();
-    return !!identity?.email && identity.email.trim().toLowerCase() === owner;
-  } catch { return false; }
+function html(markup, status=200) { return new Response(markup,{status,headers:HTML_HEADERS}); }
+function base64url(bytes) {
+  return btoa(String.fromCharCode(...bytes)).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
 }
+function unbase64url(str) {
+  if (!/^[A-Za-z0-9_-]+$/.test(str) || str.length>1000) throw new Error("Invalid base64");
+  const clean = str.replace(/-/g, "+").replace(/_/g, "/");
+  return Uint8Array.from(atob(clean + "=".repeat((4-clean.length%4)%4)), c=>c.charCodeAt(0));
+}
+function randomToken() { return base64url(crypto.getRandomValues(new Uint8Array(32))); }
+function readCookie(request, name) {
+  const parts = (request.headers.get("cookie") || "").split(/;\s*/);
+  const field = parts.find(part => part.startsWith(name+"="));
+  return field ? field.slice(name.length+1) : "";
+}
+function secureCookie(name, value, ttl) {
+  return name+"="+value+"; Path=/; Secure; HttpOnly; SameSite=Lax; Max-Age="+ttl;
+}
+function redirect(location, cookies=[]) {
+  const headers = new Headers(REPORT_HEADERS);
+  headers.set("Location", location);
+  for(const cookie of cookies) headers.append("Set-Cookie", cookie);
+  return new Response(null, {status:302, headers});
+}
+function configured(env) {
+  return Boolean(env.DB && env.GITHUB_CLIENT_ID && env.GITHUB_CLIENT_SECRET
+    && typeof env.SESSION_SECRET==="string" && env.SESSION_SECRET.length>=32);
+}
+async function signingKey(env) {
+  return crypto.subtle.importKey("raw",enc.encode(env.SESSION_SECRET),{name:"HMAC",hash:"SHA-256"},false,["sign","verify"]);
+}
+async function makeSession(env) {
+  const now=Math.floor(Date.now()/1000);
+  const body=base64url(enc.encode(JSON.stringify({sub:OWNER_GITHUB_ID,iat:now,exp:now+SESSION_SECONDS})));
+  const mac=await crypto.subtle.sign("HMAC",await signingKey(env),enc.encode(body));
+  return body+"."+base64url(new Uint8Array(mac));
+}
+async function onlyOwner(request, env) {
+  if (!configured(env)) return false;
+  const token=readCookie(request,COOKIE_SESSION);
+  const parts=token.split(".");
+  if(parts.length!==2 || parts.some(x=> !x || x.length>500))return false;
+  try{
+    const payload=JSON.parse(dec.decode(unbase64url(parts[0])));
+    const now=Math.floor(Date.now()/1000);
+    if(payload.sub!==OWNER_GITHUB_ID ||
+       !Number.isInteger(payload.exp) || !Number.isInteger(payload.iat) ||
+       payload.iat>now+60 || payload.exp<=now ||
+       payload.exp>payload.iat+SESSION_SECONDS)return false;
+    return crypto.subtle.verify("HMAC",await signingKey(env),
+      unbase64url(parts[1]),enc.encode(parts[0]));
+  }catch{return false;}
+}
+async function login(request,env) {
+  if(!configured(env))return html("<h1>Panel yapılandırması tamamlanmadı.</h1>",503);
+  const state=randomToken(), verifier=randomToken();
+  const digest=new Uint8Array(await crypto.subtle.digest("SHA-256",enc.encode(verifier)));
+  const auth=new URL("https://github.com/login/oauth/authorize");
+  auth.searchParams.set("client_id",env.GITHUB_CLIENT_ID);
+  auth.searchParams.set("redirect_uri",REPORT_BASE+"/auth/callback");
+  auth.searchParams.set("state",state);
+  auth.searchParams.set("code_challenge",base64url(digest));
+  auth.searchParams.set("code_challenge_method","S256");
+  auth.searchParams.set("scope","");
+  auth.searchParams.set("allow_signup","false");
+  return redirect(auth.toString(),[
+    secureCookie(COOKIE_OAUTH_STATE,state,600),
+    secureCookie(COOKIE_PKCE,verifier,600)
+  ]);
+}
+async function callback(request,env) {
+  if(!configured(env))return html("<h1>Panel yapılandırması tamamlanmadı.</h1>",503);
+  const incoming=new URL(request.url);
+  const code=incoming.searchParams.get("code");
+  const state=incoming.searchParams.get("state");
+  const stored=readCookie(request,COOKIE_OAUTH_STATE);
+  const verifier=readCookie(request,COOKIE_PKCE);
+  const expired=[
+    secureCookie(COOKIE_OAUTH_STATE,"",0),
+    secureCookie(COOKIE_PKCE,"",0)
+  ];
+  if(!code || !state || !stored || state!==stored || !verifier ||
+     !/^[A-Za-z0-9_-]{43,128}$/.test(verifier))return html(LOGIN_FAILED_HTML,403);
+  try{
+    const exchange=await fetch("https://github.com/login/oauth/access_token",{
+      method:"POST",
+      headers:{"Accept":"application/json","Content-Type":"application/json"},
+      body:JSON.stringify({
+        client_id:env.GITHUB_CLIENT_ID,
+        client_secret:env.GITHUB_CLIENT_SECRET,
+        code,redirect_uri:REPORT_BASE+"/auth/callback",code_verifier:verifier
+      })
+    });
+    if(!exchange.ok)return html(LOGIN_FAILED_HTML,403);
+    const tokenData=await exchange.json();
+    if(!tokenData.access_token)return html(LOGIN_FAILED_HTML,403);
+    const who=await fetch("https://api.github.com/user",{
+      headers:{"Authorization":"Bearer "+tokenData.access_token,
+        "Accept":"application/vnd.github+json",
+        "X-GitHub-Api-Version":"2022-11-28",
+        "User-Agent":"Selim-Portfolio-Analytics"}
+    });
+    if(!who.ok)return html(LOGIN_FAILED_HTML,403);
+    const user=await who.json();
+    if(user.id!==OWNER_GITHUB_ID)return html(LOGIN_FAILED_HTML,403);
+    return redirect(REPORT_BASE+"/",[
+      ...expired,
+      secureCookie(COOKIE_SESSION,await makeSession(env),SESSION_SECONDS)
+    ]);
+  }catch{return html(LOGIN_FAILED_HTML,403);}
+}
+
+const LOGIN_HTML = "<!doctype html><html lang=\"tr\"><head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\"><meta name=\"robots\" content=\"noindex,nofollow\"><title>Özel Analiz Paneli - Giriş</title><style>:root{color-scheme:dark;font-family:system-ui,sans-serif;background:#0b1628;color:#f3f6fb}body{margin:0;min-height:100vh;display:grid;place-items:center;padding:20px}.box{max-width:460px;padding:35px;background:linear-gradient(115deg,#17273c,#243a4e);border-radius:18px;border:1px solid #587189}h1{margin:0 0 12px}p{line-height:1.6;color:#cad8e7}a.button{display:inline-block;background:#eef4ff;color:#0d2438;padding:13px 18px;text-decoration:none;border-radius:10px;font-weight:750;margin-top:12px}small{color:#b5c5d5}</style></head><body><main class=\"box\"><h1>Özel Ziyaretçi Analizleri</h1><p>Bu panel yalnızca yetkili GitHub hesabıyla açılabilir. Ziyaretçilerden herhangi bir bilgi istenmez.</p><a class=\"button\" href=\"/auth/login\">GitHub ile giriş yap</a><p><small>Yalnızca temel GitHub hesap kimliği kontrol edilir. Depo erişimi istenmez.</small></p></main></body></html>";
+const LOGIN_FAILED_HTML = "<!doctype html><html lang=\"tr\"><meta charset=\"utf-8\"><meta name=\"robots\" content=\"noindex\"><title>Giriş doğrulanamadı</title><body style=\"font-family:system-ui;background:#101d30;color:white;padding:2rem\"><h1>Giriş doğrulanamadı</h1><p>İzinli GitHub hesabıyla tekrar giriş yap.</p><a style=\"color:#8cbeff\" href=\"/\">Panele dön</a></body></html>";
 const DOCUMENT = `<!doctype html>
 <html lang="tr"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
@@ -61,7 +176,7 @@ td:last-child,th:last-child{text-align:right;font-variant-numeric:tabular-nums}
 <script src="/app.js" defer></script></head>
 <body><main>
 <header><div><span class="small">PRIVATE PORTFOLIO ANALYTICS</span><h1>Ziyaretçi Analiz Paneli</h1><p>Toplu ve çerezsiz ziyaret istatistikleri. Tekil kişi veya IP bilgisi tutulmaz.</p></div>
-<div><label for="period">Dönem: </label><select id="period"><option value="7">Son 7 gün</option><option value="30" selected>Son 30 gün</option><option value="90">Son 90 gün</option></select> <button id="refresh">Yenile</button></div></header>
+<div><a href="/auth/logout" style="color:#9ccdfa;margin-right:12px">Çıkış yap</a><label for="period">Dönem: </label><select id="period"><option value="7">Son 7 gün</option><option value="30" selected>Son 30 gün</option><option value="90">Son 90 gün</option></select> <button id="refresh">Yenile</button></div></header>
 <p id="message" role="status">Rapor yükleniyor…</p>
 <section class="grid metrics" id="metrics"></section>
 <section class="card"><h2>Günlük sayfa görüntülemeleri (UTC)</h2><div id="chart" role="img" aria-label="Günlük sayfa görüntüleme grafiği"></div></section>
@@ -169,17 +284,27 @@ async function summary(env, days) {
     }, pages,countries,devices,categories,timeline };
 }
 export default {
-  async fetch(request,env,ctx) {
-    if(!await onlyOwner(ctx,env))return json({error:"Access required; owner-only"},403);
-    if(request.method!=="GET")return json({error:"Method not allowed"},405);
+  async fetch(request, env) {
     const url=new URL(request.url);
-    if(url.pathname==="/")return new Response(DOCUMENT,{headers:HTML_HEADERS});
-    if(url.pathname==="/app.js")return new Response(SCRIPT,{headers:JS_HEADERS});
-    if(url.pathname==="/api/summary"){
+    const path=url.pathname;
+    if(request.method!=="GET")return json({error:"Method not allowed"},405);
+    if(path==="/auth/login")return login(request,env);
+    if(path==="/auth/callback")return callback(request,env);
+    if(path==="/auth/logout"){
+      return redirect(REPORT_BASE+"/",[secureCookie(COOKIE_SESSION,"",0)]);
+    }
+    if(!configured(env))return html("<h1>Panel yapılandırması tamamlanmadı.</h1>",503);
+    if(!await onlyOwner(request,env)){
+      if(path==="/")return html(LOGIN_HTML);
+      return json({error:"Unauthorized"},401);
+    }
+    if(path==="/")return new Response(DOCUMENT,{headers:HTML_HEADERS});
+    if(path==="/app.js")return new Response(SCRIPT,{headers:JS_HEADERS});
+    if(path==="/api/summary"){
       const days=Number(url.searchParams.get("days")||30);
       if(![7,30,90].includes(days))return json({error:"Invalid period"},400);
-      try { return json(await summary(env,days)); }
-      catch { return json({error:"Report database unavailable"},503); }
+      try{return json(await summary(env,days));}
+      catch{return json({error:"Report database unavailable"},503);}
     }
     return json({error:"Not found"},404);
   }
