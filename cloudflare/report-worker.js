@@ -34,7 +34,7 @@ async function onlyOwner(ctx, env) {
     return !!identity?.email && identity.email.trim().toLowerCase() === owner;
   } catch { return false; }
 }
-const DOCUMENT = \`<!doctype html>
+const DOCUMENT = `<!doctype html>
 <html lang="tr"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="robots" content="noindex,nofollow,noarchive">
@@ -67,8 +67,8 @@ td:last-child,th:last-child{text-align:right;font-variant-numeric:tabular-nums}
 <section class="card"><h2>Günlük sayfa görüntülemeleri (UTC)</h2><div id="chart" role="img" aria-label="Günlük sayfa görüntüleme grafiği"></div></section>
 <section class="panels" id="panels"></section>
 <footer><small>Veriler gün/ülke/cihaz/sayfa kırılımında toplu sayımlardır. Bunlar benzersiz kişi sayısı değildir.</small></footer>
-</main></body></html>\`;
-const SCRIPT = String.raw\`"use strict";
+</main></body></html>`;
+const SCRIPT = String.raw`"use strict";
 const q=s=>document.querySelector(s);
 function el(tag, txt, cls) {
   const n=document.createElement(tag);
@@ -138,28 +138,28 @@ async function refresh(){
 }
 q("#refresh").addEventListener("click",refresh);
 q("#period").addEventListener("change",refresh);
-refresh();\`;
+refresh();`;
 async function summary(env, days) {
   const since = new Date(Date.now()-(days-1)*86400000).toISOString().slice(0,10);
   const sql = (query) => env.DB.prepare(query).bind(since).all().then(r=>r.results||[]);
   const [totals,pages,countries,devices,categories,timeline] = await Promise.all([
-    sql(\`SELECT event_type AS name, SUM(event_count) AS count
-      FROM analytics_daily_summary WHERE day>=? GROUP BY event_type\`),
-    sql(\`SELECT page_path AS name, SUM(event_count) AS count
+    sql(`SELECT event_type AS name, SUM(event_count) AS count
+      FROM analytics_daily_summary WHERE day>=? GROUP BY event_type`),
+    sql(`SELECT page_path AS name, SUM(event_count) AS count
       FROM analytics_daily_summary WHERE day>=? AND event_type='page_view'
-      GROUP BY page_path ORDER BY count DESC LIMIT 20\`),
-    sql(\`SELECT country_code AS name, SUM(event_count) AS count
+      GROUP BY page_path ORDER BY count DESC LIMIT 20`),
+    sql(`SELECT country_code AS name, SUM(event_count) AS count
       FROM analytics_daily_summary WHERE day>=? AND event_type='page_view'
-      GROUP BY country_code ORDER BY count DESC LIMIT 30\`),
-    sql(\`SELECT device_group AS name, SUM(event_count) AS count
+      GROUP BY country_code ORDER BY count DESC LIMIT 30`),
+    sql(`SELECT device_group AS name, SUM(event_count) AS count
       FROM analytics_daily_summary WHERE day>=? AND event_type='page_view'
-      GROUP BY device_group ORDER BY count DESC LIMIT 5\`),
-    sql(\`SELECT link_category AS name, SUM(event_count) AS count
+      GROUP BY device_group ORDER BY count DESC LIMIT 5`),
+    sql(`SELECT link_category AS name, SUM(event_count) AS count
       FROM analytics_daily_summary WHERE day>=? AND event_type='link_click'
-      GROUP BY link_category ORDER BY count DESC LIMIT 20\`),
-    sql(\`SELECT day AS name, SUM(event_count) AS count
+      GROUP BY link_category ORDER BY count DESC LIMIT 20`),
+    sql(`SELECT day AS name, SUM(event_count) AS count
       FROM analytics_daily_summary WHERE day>=? AND event_type='page_view'
-      GROUP BY day ORDER BY day ASC LIMIT 90\`)
+      GROUP BY day ORDER BY day ASC LIMIT 90`)
   ]);
   const views=Number(totals.find(r=>r.name==="page_view")?.count||0);
   const clicks=Number(totals.find(r=>r.name==="link_click")?.count||0);
