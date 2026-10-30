@@ -80,13 +80,14 @@ async function forget(){const t=token||storage()?.getItem(TOKEN);if(!t)return tr
 function choose(choice){const old=mode==="extended"?"extended":read();started=false;mode="reject";since=0;write(choice);document.querySelector("#selim-analytics-prefs")?.remove();if(choice!=="extended"&&old==="extended")void forget();void begin(choice)}
 function el(t,txt){const n=document.createElement(t);if(txt!=null)n.textContent=txt;return n}
 function prefs(){document.querySelector("#selim-analytics-prefs")?.remove();
-const pane=el("section");pane.id="selim-analytics-prefs";pane.setAttribute("role","dialog");pane.setAttribute("aria-label","Ziyaretçi analiz tercihleri");
-const h=el("h2","Ziyaret analizi tercihleri");
-const p=el("p","Reddet: yalnızca kimlikle ilişkilendirilmeyen günlük sayfa ve proje tıklama toplamları tutulur; IP, konum ve cihaz bilgileri kaydedilmez. Temel: ülke ve cihaz grubu toplu sayımlara eklenir. Ayrıntılı: yalnızca açık izninizle şifreli IP ve cihaz/etkileşim detayları saklanabilir. Tercihinizden sonra pencere kapanır; altbilgideki Analiz tercihleri bağlantısından değiştirebilirsiniz.");
-const l=el("a","Gizlilik ve verilerin kullanımı");l.href="./privacy.html";pane.append(h,p,l);
-if(!DNT){const bar=el("div");bar.className="actions";for(const [v,label] of [["reject","Reddet (anonim sayım)"],["basic","Temel analize izin ver"],["extended","Ayrıntılı analize izin ver"]]){const b=el("button",label);b.type="button";b.addEventListener("click",()=>choose(v));bar.append(b)}pane.append(bar)}
-else pane.append(el("p","Tarayıcınız takip edilmemesini istiyor; analiz kapalı."));
-document.body.append(pane)}
+const pane=el("section");pane.id="selim-analytics-prefs";pane.setAttribute("role","dialog");pane.setAttribute("aria-label","Ziyaret analizi tercihleri");
+const h=el("h2","Ziyaret analizi tercihleri");pane.append(h);
+const bar=el("div");bar.className="actions";
+for(const [v,label] of [["reject","Reddet"],["extended","İzin ver"]]){
+ const b=el("button",label);b.type="button";
+ b.addEventListener("click",()=>choose(v));bar.append(b)
+}
+pane.append(bar);document.body.append(pane)}
 function setup(){const st=el("style");st.textContent="#selim-analytics-prefs{position:fixed;z-index:2147480000;bottom:12px;left:12px;right:12px;max-width:760px;margin:auto;padding:18px;background:#102239;color:#eff6ff;border:1px solid #7a93ac;border-radius:14px;box-shadow:0 10px 35px #0009;font:14px/1.5 system-ui}#selim-analytics-prefs h2{font-size:18px;margin:0 0 8px}#selim-analytics-prefs p{margin:0 0 12px}#selim-analytics-prefs a{color:#b9dcff}#selim-analytics-prefs .actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}#selim-analytics-prefs button{font:inherit;background:#254962;color:#fff;border:1px solid #b2c5d8;border-radius:8px;padding:8px 10px;cursor:pointer}#selim-analytics-prefs :focus-visible{outline:3px solid #66bdee}@media(max-width:600px){#selim-analytics-prefs{left:7px;right:7px;bottom:7px;padding:12px}}";document.head.append(st);
 const url=new URL(location.href),forced=url.searchParams.get("analytics")==="preferences";if(forced){url.searchParams.delete("analytics");history.replaceState(history.state,"",url.pathname+url.search+url.hash)}
 const choice=read();if(!DNT){if(forced||!choice)prefs();else void begin(choice);if(choice!=="extended"&&storage()?.getItem(TOKEN))void forget()}}
