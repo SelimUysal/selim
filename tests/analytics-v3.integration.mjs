@@ -77,6 +77,47 @@ const sessionBody=Buffer.from(JSON.stringify({sub:108689929,iat:now,exp:now+3600
 const mac=createHmac("sha256",env.SESSION_SECRET).update(sessionBody).digest("base64url");
 const authenticated=new Request("https://selim-analytics-reports.uys-selim.workers.dev/api/details?days=365",{headers:{Cookie:"__Host-selim_report_session="+sessionBody+"."+mac}});
 assert.equal((await report.fetch(authenticated,env)).status,200,"owner can read detail report");
+
+const systemUrl="https://selim-analytics-reports.uys-selim.workers.dev/api/system";
+assert.equal((await report.fetch(new Request(systemUrl),env)).status,401,"system API requires GitHub owner");
+const systemAuth=new Request(systemUrl,{headers:{Cookie:"__Host-selim_report_session="+sessionBody+"."+mac}});
+const unconfigured=await report.fetch(systemAuth,env);
+assert.equal(unconfigured.status,503,"unconfigured Cloudflare reporting is explicitly unavailable");
+assert.equal((await unconfigured.json()).error,"not_configured");
+const originalFetch=globalThis.fetch;
+const fakeRequests=[];
+globalThis.fetch=async (input,options={})=>{
+  const url=String(input);fakeRequests.push({url,options});
+  if(url.endsWith("/deployments?per_page=25"))return Response.json({success:true,result:{deployments:[{
+    id:"aabbccdd-deployment",source:"dash",author_email:"owner@example.org",
+    created_on:"2026-10-30T12:00:00Z",annotations:{"workers/message":"Manual deployment","workers/triggered_by":"dashboard"},
+    versions:[{version_id:"12345678-version",percentage:100}]
+  }]}});
+  if(url.endsWith("/versions?per_page=50"))return Response.json({success:true,result:{items:[{
+    id:"12345678-version",metadata:{source:"dash",author_email:"owner@example.org",created_on:"2026-10-30T12:00:00Z"}
+  }]}});
+  if(url.endsWith("/graphql"))return Response.json({data:{viewer:{accounts:[{workersInvocationsAdaptive:[
+    {sum:{requests:4,errors:0},quantiles:{cpuTimeP50:2000}},
+    {sum:{requests:2,errors:1},quantiles:{cpuTimeP50:4000}}
+  ]}]}}});
+  throw Error("Unexpected API URL "+url);
+};
+try{
+  const systemEnv={...env,CLOUDFLARE_ACCOUNT_ID:"0123456789abcdef0123456789abcdef",CLOUDFLARE_MONITOR_TOKEN:"readonly-test-token-never-expose"};
+  const systemResponse=await report.fetch(systemAuth,systemEnv);
+  assert.equal(systemResponse.status,200,"owner can view Cloudflare system metrics");
+  const systemData=await systemResponse.json();
+  assert.equal(systemData.workers.length,2,"both Workers are visible");
+  assert.equal(systemData.workers[0].active.id,"aabbccdd-deployment","deployment data mapped");
+  assert.equal(systemData.workers[0].versions[0].id,"12345678-version","version metadata mapped");
+  assert.equal(systemData.workers[0].metrics.requests,6,"24h request sums cover all returned buckets");
+  assert.equal(systemData.workers[0].metrics.errorRatePercent,16.67,"error rate computed");
+  assert.equal(systemData.workers[0].metrics.medianCpuMs,2,"CPU us converted to approximate ms");
+  assert.ok(!JSON.stringify(systemData).includes(systemEnv.CLOUDFLARE_MONITOR_TOKEN),"API token not returned to client");
+  assert.equal(fakeRequests.length,6,"deployments, versions and GraphQL for both Workers");
+  assert.ok(fakeRequests.every(x=>x.options.headers.Authorization==="Bearer "+systemEnv.CLOUDFLARE_MONITOR_TOKEN));
+}finally{globalThis.fetch=originalFetch}
+
 details=[{event_id:event,recorded_at:new Date().toISOString(),day:new Date().toISOString().slice(0,10),visitor_token:visitor,session_token:session,event_type:"page_view",page_path:common.page_path,ip_ciphertext:detail.args[14],device_json:JSON.stringify({os_name:"Windows",browser_name:"Chrome"})}];
 const d=(await (await report.fetch(authenticated,env)).json()).rows[0];
 assert.equal(d.ip,"203.0.113.7","owner decrypts IP");
