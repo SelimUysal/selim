@@ -1,0 +1,32 @@
+name: Analytics v3 checks
+on:
+  pull_request:
+    paths:
+      - "assets/consent-analytics.js"
+      - "cloudflare/**"
+      - "index.html"
+      - "projects.html"
+      - "case-studies.html"
+      - "privacy.html"
+      - "tests/analytics*"
+      - ".github/workflows/analytics-v3-check.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  integration:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Syntax checks
+        run: |
+          node --check assets/consent-analytics.js
+          node --check cloudflare/collector-worker.js
+          node --check cloudflare/report-worker.js
+      - name: Analytics consent, security and retention integration
+        run: node tests/analytics-v3.integration.mjs
+      - name: Staging smoke test
+        run: node tests/analytics-staging-test.mjs

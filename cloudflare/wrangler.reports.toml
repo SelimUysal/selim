@@ -1,0 +1,10 @@
+name = "selim-analytics-reports"
+main = "report-worker.js"
+compatibility_date = "2026-10-30"
+workers_dev = true
+keep_vars = true
+
+[[d1_databases]]
+binding = "DB"
+database_name = "selim-portfolio-analytics"
+database_id = "REPLACE_WITH_ACTUAL_D1_DATABASE_ID"
