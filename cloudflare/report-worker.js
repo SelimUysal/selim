@@ -331,7 +331,7 @@ function showSystem(data){
     systemMetric(stats,"İstekler · son 24 saat",m.requests);
     systemMetric(stats,"Ortalama istek/sn · 24 saat",m.avgRequestsPerSecond===null||m.avgRequestsPerSecond===undefined?"—":m.avgRequestsPerSecond);
     systemMetric(stats,"Hata oranı · 24 saat",m.errorRatePercent===null||m.errorRatePercent===undefined?"—":m.errorRatePercent+"%");
-    systemMetric(stats,"Ortanca CPU · 24 saat",m.medianCpuMs===null||m.medianCpuMs===undefined?"—":m.medianCpuMs+" ms");
+    systemMetric(stats,"Yaklaşık ortanca CPU · 24 saat",m.medianCpuMs===null||m.medianCpuMs===undefined?"—":m.medianCpuMs+" ms");
     section.append(stats);
     if(active){section.append(el("p","Son dağıtım: "+systemDate(active.createdOn)+" · "+systemCell(active.source)+" · "+systemCell(active.triggeredBy),"system-meta"))}
     const deploys=el("details"),deployTitle=el("summary","Dağıtım geçmişi ("+(worker.deployments||[]).length+")");
@@ -358,7 +358,7 @@ async function refreshSystem(){
     }
     if(!response.ok)throw Error("Cloudflare API erişimi başarısız ("+response.status+").");
     showSystem(data);
-    q("#system-message").textContent="Son 24 saatlik Worker ölçümleri; Cloudflare API'nin sağladığı geçmiş kayıtlar gösteriliyor. Gerçek zamanlı istek/sn değildir.";
+    q("#system-message").textContent="Son 24 saat: istek/sn ortalaması, CPU p50 tahmini (µs → ms). Cloudflare API örneklem ve erişim sınırlarına tabidir; gerçek zamanlı metrik değildir.";
   }catch(e){q("#system-message").textContent="Sistem bilgileri alınamadı. Ziyaretçi raporları etkilenmez."}
 }
 
@@ -487,7 +487,7 @@ async function monitorMetrics(env,workerName){
   const end=new Date(),start=new Date(end.getTime()-86400000);
   const query=`query WorkerMetrics($accountTag: string, $datetimeStart: string, $datetimeEnd: string, $scriptName: string) {
     viewer { accounts(filter:{accountTag:$accountTag}) {
-      workersInvocationsAdaptive(limit:1,filter:{
+      workersInvocationsAdaptive(limit:1000,filter:{
         scriptName:$scriptName, datetime_geq:$datetimeStart, datetime_leq:$datetimeEnd
       }) { sum { requests errors } quantiles { cpuTimeP50 } }
     }}
@@ -502,16 +502,30 @@ async function monitorMetrics(env,workerName){
       scriptName:workerName
     }})
   });
-  const result=data.data?.viewer?.accounts?.[0]?.workersInvocationsAdaptive?.[0];
-  if(!result)return {requests:null,avgRequestsPerSecond:null,errorRatePercent:null,medianCpuMs:null};
-  const requests=Number(result.sum?.requests);
-  const errors=Number(result.sum?.errors);
-  const cpu=Number(result.quantiles?.cpuTimeP50);
+  const values=data.data?.viewer?.accounts?.[0]?.workersInvocationsAdaptive||[];
+  if(!values.length)return {requests:null,avgRequestsPerSecond:null,errorRatePercent:null,medianCpuMs:null};
+  let total=0,errors=0;
+  const cpuSamples=[];
+  for(const entry of values){
+    const n=Number(entry.sum?.requests)||0;
+    total+=n;errors+=Number(entry.sum?.errors)||0;
+    const cpu=Number(entry.quantiles?.cpuTimeP50);
+    if(n>0&&Number.isFinite(cpu))cpuSamples.push({cpu,weight:n});
+  }
+  // This is a weighted median of bucket p50s, an approximation rather than
+  // the mathematically exact global median across all Worker requests.
+  cpuSamples.sort((a,b)=>a.cpu-b.cpu);
+  let median=null;
+  if(cpuSamples.length){
+    const midpoint=cpuSamples.reduce((sum,x)=>sum+x.weight,0)/2;
+    let running=0;
+    for(const item of cpuSamples){running+=item.weight;if(running>=midpoint){median=item.cpu;break}}
+  }
   return {
-    requests:Number.isFinite(requests)?requests:null,
-    avgRequestsPerSecond:Number.isFinite(requests)?Number((requests/86400).toFixed(4)):null,
-    errorRatePercent:Number.isFinite(errors)&&requests>0?Number((errors/requests*100).toFixed(2)):null,
-    medianCpuMs:Number.isFinite(cpu)?Number((cpu/1000).toFixed(3)):null
+    requests:total,
+    avgRequestsPerSecond:Number((total/86400).toFixed(4)),
+    errorRatePercent:total>0?Number((errors/total*100).toFixed(2)):0,
+    medianCpuMs:median===null?null:Number((median/1000).toFixed(3))
   };
 }
 async function systemStatus(env){
