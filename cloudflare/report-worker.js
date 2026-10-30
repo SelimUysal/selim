@@ -191,6 +191,32 @@ function el(tag, txt, cls) {
   if(cls)n.className=cls;
   return n;
 }
+const FRIENDLY_TARGETS = {
+  "project:teknofest:report":"TEKNOFEST — Ön tasarım raporu (PDF)",
+  "project:oracle:report":"Öğrenci Bilgi Sistemi — Veritabanı raporu (PDF)",
+  "project:patterns:report":"SE461 — Tasarım kalıpları raporu (PDF)",
+  "project:hayat:live":"Hayat Rehberi — Canlı uygulama",
+  "project:hayat:source":"Hayat Rehberi — GitHub kaynak kodu",
+  "project:hayat:video":"Hayat Rehberi — Video",
+  "project:video:store":"Video Speed — Chrome Web Store",
+  "project:video:source":"Video Speed — GitHub kaynak kodu",
+  "project:telegram:source":"Telegram Haber Otomasyonu — Kaynak kodu",
+  "project:telegram:video":"Telegram Haber Otomasyonu — Video",
+  "project:quran:live":"Kur’an Ezber — Canlı uygulama",
+  "project:quran:source":"Kur’an Ezber — GitHub kaynak kodu",
+  "project:python-exercises:source":"Python Örnekleri — Kaynak kodu",
+  "project:c-exercises:source":"C Örnekleri — Kaynak kodu",
+  "project:sql-resources:source":"SQL Örnekleri — Kaynak kodu",
+  "certificate:genai-llm:pdf":"Üretken Yapay Zekâ — Sertifika PDF",
+  "certificate:genai-llm:verify":"Üretken Yapay Zekâ — Sertifika doğrulama",
+  "certificate:oracle-sql:pdf":"Oracle SQL — Sertifika PDF",
+  "certificate:deneyap-instructor:pdf":"DENEYAP İleri Robotik — Teşekkür belgesi",
+  "volunteering:video":"Gönüllülük Portfolyosu — Video",
+  "case:rims:video":"AYESAŞ RIMS — Proje videosu",
+  "case:teknofest:details":"TEKNOFEST — Teknik inceleme",
+  "case:rims:details":"AYESAŞ RIMS — Teknik inceleme",
+  "navigation:projects":"Tüm projeler sayfasına geçiş"
+};
 function groupTable(label, rows){
   const area=el("section",undefined,"card");
   area.append(el("h2",label));
@@ -247,7 +273,7 @@ async function refresh(){
       ["Ülkeler",report.countries],
       ["Cihaz grupları",report.devices],
       ["Tıklama türleri",report.categories],
-      ["Proje, belge ve bağlantı detayları",report.targets]
+      ["Proje, belge ve bağlantı detayları",(report.targets||[]).map(row=>({name:FRIENDLY_TARGETS[row.name]||row.name,count:row.count}))]
     ].forEach(([title,rows])=>panels.append(groupTable(title,rows)));
     q("#message").textContent=report.periodDays+" günlük toplu kayıtlar. Günler UTC'ye göredir.";
   }catch(error){q("#message").textContent=error.message;}
