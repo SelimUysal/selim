@@ -25,9 +25,10 @@ const allowed=r=>r.headers.get("Origin")===SITE;
 function headers(r){return {"Content-Type":"application/json; charset=utf-8","Cache-Control":"no-store","X-Content-Type-Options":"nosniff","Vary":"Origin",...(allowed(r)?{"Access-Control-Allow-Origin":SITE,"Access-Control-Allow-Methods":"POST, OPTIONS","Access-Control-Allow-Headers":"Content-Type"}:{})}}
 function json(r,x,s=200){return Response.json(x,{status:s,headers:headers(r)})}
 async function read(r,max=16000){const mime=(r.headers.get("content-type")||"").split(";")[0].trim().toLowerCase();if(!["application/json","text/plain"].includes(mime))return null;const raw=await r.text();if(raw.length>max)return null;try{const x=JSON.parse(raw);return x&&typeof x==="object"&&!Array.isArray(x)?x:null}catch{return null}}
-function valid(x){return x&&TYPES.has(x.event_type)&&PAGES.has(x.page_path)&&CATS.has(x.link_category)&&DEVICES.has(x.device_group)&&["basic","extended"].includes(x.consent_mode)&&typeof x.target_key==="string"&&(!x.target_key||x.event_type==="link_click"&&TARGETS.has(x.target_key))&&
+function valid(x){return x&&TYPES.has(x.event_type)&&PAGES.has(x.page_path)&&CATS.has(x.link_category)&&DEVICES.has(x.device_group)&&["anonymous","basic","extended"].includes(x.consent_mode)&&typeof x.target_key==="string"&&(!x.target_key||x.event_type==="link_click"&&TARGETS.has(x.target_key))&&
  (x.event_type==="link_click"||x.link_category==="-"&&x.target_key==="")&&
- (x.consent_mode!=="extended"||id(x.visitor_token)&&id(x.session_token)&&id(x.event_id))}
+ (x.consent_mode!=="extended"||id(x.visitor_token)&&id(x.session_token)&&id(x.event_id))&&
+ (x.consent_mode!=="anonymous"||(x.device_group==="unknown"&&x.event_type!=="engagement"&&!x.visitor_token&&!x.session_token&&!x.event_id&&!x.device&&!x.referrer_host&&!x.destination_url))}
 function cleanDevice(raw){if(!raw||typeof raw!=="object"||Array.isArray(raw))return {};
  const out={};for(const k of DEVICE_FIELDS){const v=raw[k];if(k==="preferred_languages"&&Array.isArray(v))out[k]=v.slice(0,8).filter(y=>typeof y==="string").map(y=>str(y,32));
  else if(typeof v==="string")out[k]=str(v,k==="gpu_renderer"?170:100);
@@ -61,11 +62,11 @@ async function event(r,env){
  let d;try{d=await read(r)}catch{}
  if(!valid(d))return json(r,{error:"Invalid analytics event"},400);
  if(d.consent_mode==="extended")try{await key(env)}catch{return json(r,{error:"Encryption not configured"},503)}
- const now=new Date(),day=now.toISOString().slice(0,10),g=geo(r),tasks=[];
+ const now=new Date(),day=now.toISOString().slice(0,10),g=d.consent_mode==="anonymous"?null:geo(r),tasks=[];
  if(d.event_type!=="engagement"){
   tasks.push(env.DB.prepare(
    "INSERT INTO analytics_daily_summary (day,event_type,page_path,link_category,country_code,device_group,event_count) VALUES (?,?,?,?,?,?,1) ON CONFLICT(day,event_type,page_path,link_category,country_code,device_group) DO UPDATE SET event_count=event_count+1"
-  ).bind(day,d.event_type,d.page_path,d.link_category,g.country,d.device_group));
+  ).bind(day,d.event_type,d.page_path,d.link_category,g?.country||"XX",d.consent_mode==="anonymous"?"unknown":d.device_group));
   if(d.event_type==="link_click"&&d.target_key)tasks.push(env.DB.prepare(
    "INSERT INTO analytics_click_targets(day,page_path,target_key,event_count) VALUES(?,?,?,1) ON CONFLICT(day,page_path,target_key) DO UPDATE SET event_count=event_count+1"
   ).bind(day,d.page_path,d.target_key))
