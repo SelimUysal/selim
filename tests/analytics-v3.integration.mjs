@@ -39,6 +39,21 @@ assert.equal((await collector.fetch(req("/events",{...common,consent_mode:"basic
 assert.equal(records.length,1,"basic stores only aggregate");
 assert.ok(!JSON.stringify(records).includes("203.0.113.7"),"basic stores no IP");
 records=[];
+const anonymous={...common,device_group:"unknown",consent_mode:"anonymous"};
+assert.equal((await collector.fetch(req("/events",anonymous),env)).status,202,"rejection counts anonymous page views");
+assert.equal(records.length,1,"rejection stores only daily aggregate");
+assert.equal(records[0].args[4],"XX","no country recorded after rejection");
+assert.equal(records[0].args[5],"unknown","no device type recorded after rejection");
+assert.ok(!JSON.stringify(records).includes("203.0.113.7"),"anonymous event has no raw IP");
+assert.ok(!JSON.stringify(records).includes("Istanbul"),"anonymous event has no city");
+assert.equal((await collector.fetch(req("/events",{...anonymous,device_group:"desktop"}),env)).status,400,"rejects device metadata in anonymous mode");
+assert.equal((await collector.fetch(req("/events",{...anonymous,visitor_token:crypto.randomUUID()}),env)).status,400,"rejects identifiers in anonymous mode");
+assert.equal((await collector.fetch(req("/events",{...anonymous,device:{browser_name:"Chrome"}}),env)).status,400,"rejects device object in anonymous mode");
+records=[];
+assert.equal((await collector.fetch(req("/events",{...anonymous,event_type:"link_click",target_key:"project:video:source",link_category:"github"}),env)).status,202,"anonymous project click");
+assert.ok(records.some(x=>x.sql.includes("analytics_click_targets")),"anonymous project click counted");
+
+records=[];
 const visitor=crypto.randomUUID(),session=crypto.randomUUID(),event=crypto.randomUUID();
 const extended={...common,consent_mode:"extended",visitor_token:visitor,session_token:session,event_id:event,referrer_host:"linkedin.com",device:{os_name:"Windows",browser_name:"Chrome",screen_width:1920,preferred_languages:["tr-TR","en-US"]}};
 assert.equal((await collector.fetch(req("/events",extended),env)).status,202,"extended pageview");
@@ -78,12 +93,18 @@ for(const page of ["index.html","projects.html","case-studies.html"]){
  const html=read(page);
  assert.ok(html.includes("assets/consent-analytics.js"),"v3 client installed "+page);
  assert.ok(!html.includes('src="./assets/cookieless-analytics.js'),"old tracker disabled "+page);
+ assert.ok(html.includes("analytics=preferences"),"footer preferences link present "+page);
 }
 const client=read("assets/consent-analytics.js");
 assert.ok(client.includes('let mode="reject",started=false'),"default opt-out");
 assert.ok(client.includes('navigator.globalPrivacyControl'),"browser GPC respected");
 assert.ok(client.includes('const old=mode==="extended"?"extended":read()'),"withdrawal after reload");
 assert.ok(client.includes("navigator.sendBeacon"),"outbound event delivery fallback");
+assert.ok(client.includes('mode=choice==="reject"?"anonymous":choice'),"reject becomes anonymous aggregate tracking");
+assert.ok(client.includes('document.querySelector("#selim-analytics-prefs")?.remove()'),"popup closes after selection");
+assert.ok(!client.includes("selim-analytics-settings"),"fixed floating preferences button removed");
+assert.ok(client.includes('analytics")==="preferences"'),"footer link can open preferences");
+
 assert.ok(read("privacy.html").includes("365 gün"),"retention notice matches");
 assert.ok(read("cloudflare/report-worker.js").includes('value="365"'),"annual selection available");
 assert.ok(read("cloudflare/report-worker.js").includes("ORDER BY day ASC LIMIT 365"),"annual timeline includes 365 days");
