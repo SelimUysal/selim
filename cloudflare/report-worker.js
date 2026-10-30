@@ -175,13 +175,13 @@ td:last-child,th:last-child{text-align:right;font-variant-numeric:tabular-nums}
 </style>
 <script src="/app.js" defer></script></head>
 <body><main>
-<header><div><span class="small">PRIVATE PORTFOLIO ANALYTICS</span><h1>Ziyaretçi Analiz Paneli</h1><p>Toplu ve çerezsiz ziyaret istatistikleri. Tekil kişi veya IP bilgisi tutulmaz.</p></div>
-<div><a href="/auth/logout" style="color:#9ccdfa;margin-right:12px">Çıkış yap</a><label for="period">Dönem: </label><select id="period"><option value="7">Son 7 gün</option><option value="30" selected>Son 30 gün</option><option value="90">Son 90 gün</option></select> <button id="refresh">Yenile</button></div></header>
+<header><div><span class="small">PRIVATE PORTFOLIO ANALYTICS</span><h1>Ziyaretçi Analiz Paneli</h1><p>Toplu sayılar ve yalnızca açık izinli ziyaretçilerin ayrıntılı kayıtları.</p></div>
+<div><a href="/auth/logout" style="color:#9ccdfa;margin-right:12px">Çıkış yap</a><label for="period">Dönem: </label><select id="period"><option value="7">Son 7 gün</option><option value="30" selected>Son 30 gün</option><option value="90">Son 90 gün</option><option value="365">Son 365 gün</option></select> <button id="export">CSV dışa aktar</button> <button id="refresh">Yenile</button></div></header>
 <p id="message" role="status">Rapor yükleniyor…</p>
 <section class="grid metrics" id="metrics"></section>
 <section class="card"><h2>Günlük sayfa görüntülemeleri (UTC)</h2><div id="chart" role="img" aria-label="Günlük sayfa görüntüleme grafiği"></div></section>
-<section class="panels" id="panels"></section>
-<footer><small>Veriler gün/ülke/cihaz/sayfa kırılımında toplu sayımlardır. Bunlar benzersiz kişi sayısı değildir.</small></footer>
+<section class="panels" id="panels"></section><section class="card"><h2>İzinli ayrıntılı olay kayıtları</h2><p>IP yalnızca açık izinli ziyaretçiler için şifreli tutulur ve 7 gün sonra silinir.</p><div class="tablewrap" id="details"></div></section>
+<footer><small>Toplu sayılar benzersiz kişi sayısı değildir. CSV dosyaları kişisel veri içerebilir.</small></footer>
 </main></body></html>`;
 const SCRIPT = String.raw`"use strict";
 const q=s=>document.querySelector(s);
@@ -272,19 +272,28 @@ async function refresh(){
       ["En çok açılan sayfalar",report.pages],
       ["Ülkeler",report.countries],
       ["Cihaz grupları",report.devices],
-      ["Tıklama türleri",report.categories],
+      ["Tıklama türleri",report.categories],["Şehirler (izinli)",report.cities],["Bölgeler (izinli)",report.regions],["Ağ kuruluşları (izinli)",report.networks],["Yönlendiren siteler",report.referrers],["Tıklanan adresler",report.destinations],["Tarayıcılar",report.browsers],["İşletim sistemleri",report.systems],
       ["Proje, belge ve bağlantı detayları",(report.targets||[]).map(row=>({name:FRIENDLY_TARGETS[row.name]||row.name,count:row.count}))]
     ].forEach(([title,rows])=>panels.append(groupTable(title,rows)));
-    q("#message").textContent=report.periodDays+" günlük toplu kayıtlar. Günler UTC'ye göredir.";
+    const detail=await fetch("/api/details?days="+days,{credentials:"same-origin",cache:"no-store"});if(!detail.ok)throw Error("İzinli ayrıntılı rapor okunamadı.");showDetails((await detail.json()).rows||[]);
+    q("#message").textContent=report.periodDays+" günlük toplamlar ve izinli detaylar. Günler UTC'ye göredir.";
   }catch(error){q("#message").textContent=error.message;}
 }
+
+function showDetails(rows){const root=q("#details");root.replaceChildren();const t=el("table"),header=el("tr");
+ for(const name of ["UTC","Olay","Sayfa / hedef","Ülke / şehir","IP","Tarayıcı / OS","Tüm alanlar"])header.append(el("th",name));t.append(header);
+ for(const row of rows){const tr=el("tr");for(const v of [row.recorded_at,row.event_type,row.target_label||row.page_path,[row.country_code,row.city].filter(Boolean).join(" / "),row.ip||"—",[row.device?.browser_name,row.device?.os_name].filter(Boolean).join(" / ")])tr.append(el("td",v||"—"));
+ const cell=el("td"),details=el("details"),title=el("summary","Görüntüle"),pre=el("pre",JSON.stringify(row,null,2));pre.style.whiteSpace="pre-wrap";pre.style.wordBreak="break-word";details.append(title,pre);cell.append(details);tr.append(cell);t.append(tr)}
+ if(!rows.length){const tr=el("tr"),td=el("td","Henüz izinli ayrıntılı kayıt yok.");td.colSpan=7;tr.append(td);t.append(tr)}
+ root.append(t)}
+q("#export").addEventListener("click",()=>{if(confirm("CSV izinli kişisel verileri içerebilir. İndirilsin mi?"))location.href="/api/export?days="+q("#period").value});
 q("#refresh").addEventListener("click",refresh);
 q("#period").addEventListener("change",refresh);
 refresh();`;
 async function summary(env, days) {
   const since = new Date(Date.now()-(days-1)*86400000).toISOString().slice(0,10);
   const sql = (query) => env.DB.prepare(query).bind(since).all().then(r=>r.results||[]);
-  const [totals,pages,countries,devices,categories,timeline,targets] = await Promise.all([
+  const [totals,pages,countries,devices,categories,timeline,targets,cities,regions,networks,referrers,destinations,browsers,systems] = await Promise.all([
     sql(`SELECT event_type AS name, SUM(event_count) AS count
       FROM analytics_daily_summary WHERE day>=? GROUP BY event_type`),
     sql(`SELECT page_path AS name, SUM(event_count) AS count
@@ -304,14 +313,45 @@ async function summary(env, days) {
       GROUP BY day ORDER BY day ASC LIMIT 90`),
     sql(`SELECT target_key AS name, SUM(event_count) AS count
       FROM analytics_click_targets WHERE day>=?
-      GROUP BY target_key ORDER BY count DESC LIMIT 80`)
+      GROUP BY target_key ORDER BY count DESC LIMIT 80`),
+    sql(`SELECT COALESCE(NULLIF(city,''),'Bilinmiyor') AS name, COUNT(*) AS count FROM analytics_detail_events WHERE day>=? AND event_type='page_view' GROUP BY name ORDER BY count DESC LIMIT 20`),
+    sql(`SELECT COALESCE(NULLIF(region,''),'Bilinmiyor') AS name, COUNT(*) AS count FROM analytics_detail_events WHERE day>=? AND event_type='page_view' GROUP BY name ORDER BY count DESC LIMIT 20`),
+    sql(`SELECT COALESCE(NULLIF(network_organization,''),'Bilinmiyor') AS name, COUNT(*) AS count FROM analytics_detail_events WHERE day>=? AND event_type='page_view' GROUP BY name ORDER BY count DESC LIMIT 20`),
+    sql(`SELECT COALESCE(NULLIF(referrer_host,''),'Doğrudan / bilinmiyor') AS name, COUNT(*) AS count FROM analytics_detail_events WHERE day>=? AND event_type='page_view' GROUP BY name ORDER BY count DESC LIMIT 20`),
+    sql(`SELECT COALESCE(NULLIF(destination_url,''),'Bilinmiyor') AS name, COUNT(*) AS count FROM analytics_detail_events WHERE day>=? AND event_type='link_click' GROUP BY name ORDER BY count DESC LIMIT 20`),
+    sql(`SELECT COALESCE(json_extract(device_json,'$.browser_name'),'Bilinmiyor') AS name, COUNT(*) AS count FROM analytics_detail_events WHERE day>=? AND event_type='page_view' GROUP BY name ORDER BY count DESC LIMIT 20`),
+    sql(`SELECT COALESCE(json_extract(device_json,'$.os_name'),'Bilinmiyor') AS name, COUNT(*) AS count FROM analytics_detail_events WHERE day>=? AND event_type='page_view' GROUP BY name ORDER BY count DESC LIMIT 20`)
   ]);
   const views=Number(totals.find(r=>r.name==="page_view")?.count||0);
   const clicks=Number(totals.find(r=>r.name==="link_click")?.count||0);
   return { periodDays:days, metrics:{
       views,clicks,clickRate:views?Math.round(clicks/views*100):0,
       activeDays:timeline.length
-    }, pages,countries,devices,categories,timeline,targets };
+    }, pages,countries,devices,categories,timeline,targets,cities,regions,networks,referrers,destinations,browsers,systems };
+}
+
+async function decryptedIp(cipher,env){
+ if(!cipher||!env.ANALYTICS_ENCRYPTION_KEY)return null;
+ try{const raw=Uint8Array.from(atob(env.ANALYTICS_ENCRYPTION_KEY),c=>c.charCodeAt(0));if(raw.length!==32)return null;
+ const data=Uint8Array.from(atob(cipher),c=>c.charCodeAt(0));
+ const key=await crypto.subtle.importKey("raw",raw,{name:"AES-GCM"},false,["decrypt"]);
+ return dec.decode(await crypto.subtle.decrypt({name:"AES-GCM",iv:data.slice(0,12)},key,data.slice(12)))}catch{return null}
+}
+async function detailRows(env,days,limit=100){
+ const since=new Date(Date.now()-(days-1)*86400000).toISOString().slice(0,10);
+ const list=await env.DB.prepare("SELECT * FROM analytics_detail_events WHERE day>=? ORDER BY recorded_at DESC LIMIT ?").bind(since,limit).all();
+ return Promise.all((list.results||[]).map(async row=>{
+ let device={};try{device=JSON.parse(row.device_json)}catch{}
+ const {ip_ciphertext,device_json,...rest}=row;
+ return {...rest,visitor_token:row.visitor_token.slice(0,8)+"…",session_token:row.session_token.slice(0,8)+"…",ip:await decryptedIp(ip_ciphertext,env),device,target_label:row.target_key||""}
+ }))
+}
+function csvCell(x){let s=x==null?"":String(x);if(/^\s*[=+\-@]/.test(s))s="'"+s;return '"'+s.replace(/"/g,'""')+'"'}
+async function exportCsv(env,days){
+ const rows=await detailRows(env,days,2000);
+ const cols=["recorded_at","event_type","page_path","target_label","destination_url","country_code","city","region","region_code","postal_code","continent","geo_timezone","asn","network_organization","isp_guess","vpn_proxy_status","ip","referrer_host","scroll_pct","active_seconds","device"];
+ const lines=[cols.join(","),...rows.map(r=>cols.map(k=>csvCell(k==="device"?JSON.stringify(r.device):r[k])).join(","))];
+ return new Response("\uFEFF"+lines.join("\r\n"),{headers:{"Content-Type":"text/csv; charset=utf-8","Content-Disposition":'attachment; filename="selim-private-analytics.csv"',"Cache-Control":"no-store","X-Content-Type-Options":"nosniff"}})
 }
 export default {
   async fetch(request, env) {
@@ -332,10 +372,11 @@ export default {
     if(path==="/app.js")return new Response(SCRIPT,{headers:JS_HEADERS});
     if(path==="/api/summary"){
       const days=Number(url.searchParams.get("days")||30);
-      if(![7,30,90].includes(days))return json({error:"Invalid period"},400);
+      if(![7,30,90,365].includes(days))return json({error:"Invalid period"},400);
       try{return json(await summary(env,days));}
       catch{return json({error:"Report database unavailable"},503);}
     }
+    if(["/api/details","/api/export"].includes(path)){const days=Number(url.searchParams.get("days")||30);if(![7,30,90,365].includes(days))return json({error:"Invalid period"},400);try{if(path==="/api/details")return json({rows:await detailRows(env,days,100)});return exportCsv(env,days)}catch{return json({error:"Private detail query unavailable"},503)}}
     return json({error:"Not found"},404);
   }
 };

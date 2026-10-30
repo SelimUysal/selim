@@ -1,0 +1,29 @@
+name: Deploy private portfolio analytics Workers
+# Manual first deployment; activate automatic releases only after migration and
+# an explicit production verification. No Cloudflare secrets in repository files.
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: analytics-production-deploy
+  cancel-in-progress: false
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Deploy visitor collector and retention cron
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          workingDirectory: cloudflare
+          command: deploy --config wrangler.collector.toml
+      - name: Deploy GitHub OAuth reporting dashboard
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          workingDirectory: cloudflare
+          command: deploy --config wrangler.reports.toml

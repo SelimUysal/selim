@@ -1,0 +1,13 @@
+name = "selim-analytics-collector"
+main = "collector-worker.js"
+compatibility_date = "2026-10-30"
+workers_dev = true
+keep_vars = true
+
+[[d1_databases]]
+binding = "DB"
+database_name = "selim-portfolio-analytics"
+database_id = "9b166755-480f-4298-bb9f-45f4bb6afcb8"
+
+[triggers]
+crons = ["0 3 * * *"]
