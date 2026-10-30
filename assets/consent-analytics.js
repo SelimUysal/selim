@@ -1,4 +1,4 @@
-/* Consent-aware portfolio analytics v3; no tracking before visitor choice. */
+/* Consent-aware portfolio analytics v3; no analytics request before a visitor choice. */
 (()=>{'use strict';
 const ENDPOINT="https://selim-analytics-collector.uys-selim.workers.dev";
 const KEY="selim-analytics-consent-v3", TOKEN="selim-analytics-token-v3", SESSION="selim-analytics-session-v3";
@@ -64,8 +64,8 @@ const phone_brand=model&&/^SM-/i.test(model)?"Samsung":model&&/^Pixel/i.test(mod
 return {...d,os_version:hi.platformVersion||d.os_version,device_category:group(),device_type:navigator.userAgentData?.mobile?"phone":group(),device_name:null,phone_brand,phone_model:model,screen_width:screen.width,screen_height:screen.height,viewport_width:innerWidth,viewport_height:innerHeight,device_pixel_ratio:devicePixelRatio,logical_cores:navigator.hardwareConcurrency??null,device_memory_gb:navigator.deviceMemory??null,gpu_vendor,gpu_renderer,browser_language:navigator.language,preferred_languages:(navigator.languages||[]).slice(0,8),browser_timezone:Intl.DateTimeFormat().resolvedOptions().timeZone,color_scheme:matchMedia("(prefers-color-scheme:dark)").matches?"dark":"light",connection_type:c?.type||null,connection_quality:c?.effectiveType||null,connection_downlink_mbps:c?.downlink||null,connection_rtt_ms:c?.rtt||null,hardware_architecture:hi.architecture||null,ua_mobile:navigator.userAgentData?.mobile??null,platform:hi.platform||null,ua_model:model,source_url_host:host()}}
 let mode="reject",started=false,token="",sid="",maxScroll=0,active=0,since=0;
 function send(event_type,link_category="-",target_key="",rest={}){if(!started||DNT)return;
-const data={event_type,page_path:page,link_category,target_key,device_group:group(),consent_mode:mode,...rest};
-if(mode==="extended")Object.assign(data,{event_id:uuid(),visitor_token:token,session_token:sid});
+const data={event_type,page_path:page,link_category,target_key,device_group:mode==="anonymous"?"unknown":group(),consent_mode:mode};
+if(mode==="extended")Object.assign(data,rest,{event_id:uuid(),visitor_token:token,session_token:sid});
 const payload=JSON.stringify(data);
 if(event_type!=="page_view"&&navigator.sendBeacon){
  try{if(navigator.sendBeacon(ENDPOINT+"/events",new Blob([payload],{type:"text/plain;charset=UTF-8"})))return}catch{}
@@ -73,22 +73,24 @@ if(event_type!=="page_view"&&navigator.sendBeacon){
 fetch(ENDPOINT+"/events",{method:"POST",mode:"cors",credentials:"omit",keepalive:true,headers:{"Content-Type":"application/json"},body:payload}).catch(()=>{})}
 function sc(){const total=Math.max(0,document.documentElement.scrollHeight-innerHeight);maxScroll=Math.max(maxScroll,total?Math.round(Math.min(100,scrollY/total*100)):100)}
 function end(){if(mode!=="extended"||!started)return;if(since){active+=performance.now()-since;since=0}send("engagement","-","",{scroll_pct:maxScroll,active_seconds:Math.min(7200,Math.round(active/1000))})}
-async function begin(choice){if(started||DNT||choice==="reject")return;mode=choice;started=true;
+async function begin(choice){if(started||DNT)return;mode=choice==="reject"?"anonymous":choice;started=true;
 if(mode==="extended"){token=storage()?.getItem(TOKEN)||uuid();sid=session()?.getItem(SESSION)||uuid();try{storage()?.setItem(TOKEN,token);session()?.setItem(SESSION,sid)}catch{};since=document.visibilityState==="visible"?performance.now():0;sc()}
-const details=mode==="extended"?await device():null;if(!started)return;send("page_view","-","",{referrer_host:host(),...(details?{device:details}:{})})}
-async function forget(){const t=token||storage()?.getItem(TOKEN);if(t)try{await fetch(ENDPOINT+"/forget",{method:"POST",mode:"cors",credentials:"omit",headers:{"Content-Type":"application/json"},body:JSON.stringify({visitor_token:t})})}catch{};token="";sid="";try{storage()?.removeItem(TOKEN);session()?.removeItem(SESSION)}catch{}}
-function choose(choice){const old=mode==="extended"?"extended":read();started=false;mode="reject";since=0;const work=async()=>{if(choice!=="extended"&&old==="extended")await forget();write(choice);document.querySelector("#selim-analytics-prefs")?.remove();if(choice!=="reject")begin(choice)};work()}
+const details=mode==="extended"?await device():null;if(!started)return;send("page_view","-","",details?{referrer_host:host(),device:details}:{})}
+async function forget(){const t=token||storage()?.getItem(TOKEN);if(!t)return true;try{const response=await fetch(ENDPOINT+"/forget",{method:"POST",mode:"cors",credentials:"omit",headers:{"Content-Type":"application/json"},body:JSON.stringify({visitor_token:t})});if(!response.ok||!(await response.json()).deleted)return false;token="";sid="";try{storage()?.removeItem(TOKEN);session()?.removeItem(SESSION)}catch{}return true}catch{return false}}
+function choose(choice){const old=mode==="extended"?"extended":read();started=false;mode="reject";since=0;write(choice);document.querySelector("#selim-analytics-prefs")?.remove();if(choice!=="extended"&&old==="extended")void forget();void begin(choice)}
 function el(t,txt){const n=document.createElement(t);if(txt!=null)n.textContent=txt;return n}
 function prefs(){document.querySelector("#selim-analytics-prefs")?.remove();
 const pane=el("section");pane.id="selim-analytics-prefs";pane.setAttribute("role","dialog");pane.setAttribute("aria-label","Ziyaretçi analiz tercihleri");
 const h=el("h2","Ziyaret analizi tercihleri");
-const p=el("p","Bu portfolyoda analiz isteğe bağlıdır. Temel analiz yalnızca toplu sayılar; ayrıntılı analiz ise izinle şifreli IP, yaklaşık konum, cihaz bilgileri, sayfa ve bağlantı etkileşimlerini kaydeder. Reddetmek siteyi etkilemez.");
+const p=el("p","Reddet: yalnızca kimlikle ilişkilendirilmeyen günlük sayfa ve proje tıklama toplamları tutulur; IP, konum ve cihaz bilgileri kaydedilmez. Temel: ülke ve cihaz grubu toplu sayımlara eklenir. Ayrıntılı: yalnızca açık izninizle şifreli IP ve cihaz/etkileşim detayları saklanabilir. Tercihinizden sonra pencere kapanır; altbilgideki Analiz tercihleri bağlantısından değiştirebilirsiniz.");
 const l=el("a","Gizlilik ve verilerin kullanımı");l.href="./privacy.html";pane.append(h,p,l);
-if(!DNT){const bar=el("div");bar.className="actions";for(const [v,label] of [["reject","Reddet"],["basic","Temel analize izin ver"],["extended","Ayrıntılı analize izin ver"]]){const b=el("button",label);b.type="button";b.addEventListener("click",()=>choose(v));bar.append(b)}pane.append(bar)}
+if(!DNT){const bar=el("div");bar.className="actions";for(const [v,label] of [["reject","Reddet (anonim sayım)"],["basic","Temel analize izin ver"],["extended","Ayrıntılı analize izin ver"]]){const b=el("button",label);b.type="button";b.addEventListener("click",()=>choose(v));bar.append(b)}pane.append(bar)}
 else pane.append(el("p","Tarayıcınız takip edilmemesini istiyor; analiz kapalı."));
 document.body.append(pane)}
-function setup(){const st=el("style");st.textContent="#selim-analytics-prefs{position:fixed;z-index:2147480000;bottom:12px;left:12px;right:12px;max-width:760px;margin:auto;padding:18px;background:#102239;color:#eff6ff;border:1px solid #7a93ac;border-radius:14px;box-shadow:0 10px 35px #0009;font:14px/1.5 system-ui}#selim-analytics-prefs h2{font-size:18px;margin:0 0 8px}#selim-analytics-prefs p{margin:0 0 12px}#selim-analytics-prefs a{color:#b9dcff}#selim-analytics-prefs .actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}#selim-analytics-prefs button,#selim-analytics-settings{font:inherit;background:#254962;color:#fff;border:1px solid #b2c5d8;border-radius:8px;padding:8px 10px;cursor:pointer}#selim-analytics-settings{position:fixed;z-index:2147479999;right:8px;bottom:8px;font-size:11px;padding:5px 7px}#selim-analytics-prefs :focus-visible,#selim-analytics-settings:focus-visible{outline:3px solid #66bdee}@media(max-width:600px){#selim-analytics-prefs{left:7px;right:7px;bottom:7px;padding:12px}}";document.head.append(st);
-const b=el("button","Analiz tercihleri");b.id="selim-analytics-settings";b.type="button";b.addEventListener("click",prefs);document.body.append(b);const v=read();if(!DNT){if(!v)prefs();else if(v!=="reject")begin(v)}}
+function setup(){const st=el("style");st.textContent="#selim-analytics-prefs{position:fixed;z-index:2147480000;bottom:12px;left:12px;right:12px;max-width:760px;margin:auto;padding:18px;background:#102239;color:#eff6ff;border:1px solid #7a93ac;border-radius:14px;box-shadow:0 10px 35px #0009;font:14px/1.5 system-ui}#selim-analytics-prefs h2{font-size:18px;margin:0 0 8px}#selim-analytics-prefs p{margin:0 0 12px}#selim-analytics-prefs a{color:#b9dcff}#selim-analytics-prefs .actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}#selim-analytics-prefs button{font:inherit;background:#254962;color:#fff;border:1px solid #b2c5d8;border-radius:8px;padding:8px 10px;cursor:pointer}#selim-analytics-prefs :focus-visible{outline:3px solid #66bdee}@media(max-width:600px){#selim-analytics-prefs{left:7px;right:7px;bottom:7px;padding:12px}}";document.head.append(st);
+const url=new URL(location.href),forced=url.searchParams.get("analytics")==="preferences";if(forced){url.searchParams.delete("analytics");history.replaceState(history.state,"",url.pathname+url.search+url.hash)}
+const choice=read();if(!DNT){if(forced||!choice)prefs();else void begin(choice);if(choice!=="extended"&&storage()?.getItem(TOKEN))void forget()}}
+
 document.addEventListener("click",e=>{const a=e.target.closest?.("a[href]");if(a&&started){try{send("link_click",category(a),target(a),{destination_url:mode==="extended"?dest(a):""})}catch{}}},{capture:true,passive:true});
 addEventListener("scroll",()=>{if(started&&mode==="extended")sc()},{passive:true});
 document.addEventListener("visibilitychange",()=>{if(!started||mode!=="extended")return;const t=performance.now();if(document.visibilityState==="hidden"){if(since){active+=t-since;since=0}}else if(!since)since=t});
