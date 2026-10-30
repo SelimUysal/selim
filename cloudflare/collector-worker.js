@@ -24,7 +24,7 @@ const bounded=(n,a,b)=>typeof n==="number"&&Number.isFinite(n)&&n>=a&&n<=b?n:nul
 const allowed=r=>r.headers.get("Origin")===SITE;
 function headers(r){return {"Content-Type":"application/json; charset=utf-8","Cache-Control":"no-store","X-Content-Type-Options":"nosniff","Vary":"Origin",...(allowed(r)?{"Access-Control-Allow-Origin":SITE,"Access-Control-Allow-Methods":"POST, OPTIONS","Access-Control-Allow-Headers":"Content-Type"}:{})}}
 function json(r,x,s=200){return Response.json(x,{status:s,headers:headers(r)})}
-async function read(r,max=16000){if(!r.headers.get("content-type")?.startsWith("application/json"))return null;const raw=await r.text();if(raw.length>max)return null;try{const x=JSON.parse(raw);return x&&typeof x==="object"&&!Array.isArray(x)?x:null}catch{return null}}
+async function read(r,max=16000){const mime=(r.headers.get("content-type")||"").split(";")[0].trim().toLowerCase();if(!["application/json","text/plain"].includes(mime))return null;const raw=await r.text();if(raw.length>max)return null;try{const x=JSON.parse(raw);return x&&typeof x==="object"&&!Array.isArray(x)?x:null}catch{return null}}
 function valid(x){return x&&TYPES.has(x.event_type)&&PAGES.has(x.page_path)&&CATS.has(x.link_category)&&DEVICES.has(x.device_group)&&["basic","extended"].includes(x.consent_mode)&&typeof x.target_key==="string"&&(!x.target_key||x.event_type==="link_click"&&TARGETS.has(x.target_key))&&
  (x.event_type==="link_click"||x.link_category==="-"&&x.target_key==="")&&
  (x.consent_mode!=="extended"||id(x.visitor_token)&&id(x.session_token)&&id(x.event_id))}

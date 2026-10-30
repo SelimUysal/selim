@@ -179,7 +179,7 @@ td:last-child,th:last-child{text-align:right;font-variant-numeric:tabular-nums}
 <div><a href="/auth/logout" style="color:#9ccdfa;margin-right:12px">Çıkış yap</a><label for="period">Dönem: </label><select id="period"><option value="7">Son 7 gün</option><option value="30" selected>Son 30 gün</option><option value="90">Son 90 gün</option><option value="365">Son 365 gün</option></select> <button id="export">CSV dışa aktar</button> <button id="refresh">Yenile</button></div></header>
 <p id="message" role="status">Rapor yükleniyor…</p>
 <section class="grid metrics" id="metrics"></section>
-<section class="card"><h2>Günlük sayfa görüntülemeleri (UTC)</h2><div id="chart" role="img" aria-label="Günlük sayfa görüntüleme grafiği"></div></section>
+<section class="card"><h2>Sayfa görüntülemeleri: günlük, yıllık görünümde aylık (UTC)</h2><div id="chart" role="img" aria-label="Günlük sayfa görüntüleme grafiği"></div></section>
 <section class="panels" id="panels"></section><section class="card"><h2>İzinli ayrıntılı olay kayıtları</h2><p>İzinli IP verileri ve ayrıntılı olay kayıtları en fazla 365 gün saklanır; süresi dolan kayıtlar günlük temizlik göreviyle silinir.</p><div class="tablewrap" id="details"></div></section>
 <footer><small>Toplu sayılar benzersiz kişi sayısı değildir. CSV dosyaları kişisel veri içerebilir.</small></footer>
 </main></body></html>`;
@@ -239,7 +239,13 @@ function groupTable(label, rows){
 }
 function drawChart(timeline){
   const canvas=q("#chart");canvas.replaceChildren();
-  const rows=timeline||[];
+  const daily=timeline||[];
+  // Annual view is grouped by month for legibility; all 365 days still count.
+  const rows=daily.length>90?Array.from(daily.reduce((m,r)=>{
+    const label=String(r.name).slice(0,7);
+    m.set(label,{name:label,count:Number(r.count||0)+(m.get(label)?.count||0)});
+    return m;
+  },new Map()).values()):daily;
   if(!rows.length){canvas.append(el("p","Henüz görüntüleme yok."));return;}
   const max=Math.max(1,...rows.map(r=>r.count));
   for(const row of rows){
@@ -310,7 +316,7 @@ async function summary(env, days) {
       GROUP BY link_category ORDER BY count DESC LIMIT 20`),
     sql(`SELECT day AS name, SUM(event_count) AS count
       FROM analytics_daily_summary WHERE day>=? AND event_type='page_view'
-      GROUP BY day ORDER BY day ASC LIMIT 90`),
+      GROUP BY day ORDER BY day ASC LIMIT 365`),
     sql(`SELECT target_key AS name, SUM(event_count) AS count
       FROM analytics_click_targets WHERE day>=?
       GROUP BY target_key ORDER BY count DESC LIMIT 80`),

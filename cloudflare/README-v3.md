@@ -28,7 +28,7 @@ This directory contains a migration from the existing cookieless daily aggregate
    [Convert]::ToBase64String($bytes)
    ```
    Add the **exact same value** to both `selim-analytics-collector` and `selim-analytics-reports` as **Secret** `ANALYTICS_ENCRYPTION_KEY`. Never send this value in chat or commit it. Keep `SESSION_SECRET` separate and unchanged. Both Workers must have D1 binding `DB`.
-5. Deploy the collector code then the reports code manually **after** schema + secret setup, or configure GitHub Actions with `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` secrets (least privilege) to run the workflow manually.
+5. Deploy the collector code then the reports code manually **after** schema + secret setup. To use the manual GitHub Actions workflow, first replace `REPLACE_WITH_ACTUAL_D1_DATABASE_ID` in both Wrangler manifests with the **exact** D1 database UUID copied from Cloudflare D1 Overview (do not guess or infer from a prefix); add `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` as repository secrets. Never run the workflow before correcting the UUID. The workflow is intentionally manual-only.
 6. Collector Settings > Triggers: daily cron `0 3 * * *` (UTC). Retention: encrypted IP, detailed events and aggregate counters up to 365 days, subject to daily cleanup.
 7. Verify collector `/health` replies `version: 3`, reports GitHub OAuth login works, and `/api/details` is inaccessible to non-owner.
 8. Only then merge `analytics-v3-staging` into `main`, so GitHub Pages loads `assets/consent-analytics.js` **instead of** the legacy `assets/cookieless-analytics.js`. The three HTML pages in the staging branch already perform the substitution.

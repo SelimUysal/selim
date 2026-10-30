@@ -66,7 +66,11 @@ let mode="reject",started=false,token="",sid="",maxScroll=0,active=0,since=0;
 function send(event_type,link_category="-",target_key="",rest={}){if(!started||DNT)return;
 const data={event_type,page_path:page,link_category,target_key,device_group:group(),consent_mode:mode,...rest};
 if(mode==="extended")Object.assign(data,{event_id:uuid(),visitor_token:token,session_token:sid});
-fetch(ENDPOINT+"/events",{method:"POST",mode:"cors",credentials:"omit",keepalive:true,headers:{"Content-Type":"application/json"},body:JSON.stringify(data)}).catch(()=>{})}
+const payload=JSON.stringify(data);
+if(event_type!=="page_view"&&navigator.sendBeacon){
+ try{if(navigator.sendBeacon(ENDPOINT+"/events",new Blob([payload],{type:"text/plain;charset=UTF-8"})))return}catch{}
+}
+fetch(ENDPOINT+"/events",{method:"POST",mode:"cors",credentials:"omit",keepalive:true,headers:{"Content-Type":"application/json"},body:payload}).catch(()=>{})}
 function sc(){const total=Math.max(0,document.documentElement.scrollHeight-innerHeight);maxScroll=Math.max(maxScroll,total?Math.round(Math.min(100,scrollY/total*100)):100)}
 function end(){if(mode!=="extended"||!started)return;if(since){active+=performance.now()-since;since=0}send("engagement","-","",{scroll_pct:maxScroll,active_seconds:Math.min(7200,Math.round(active/1000))})}
 async function begin(choice){if(started||DNT||choice==="reject")return;mode=choice;started=true;
